@@ -1,0 +1,184 @@
+"""
+Path: infrastructure/fastapi/streamer_adapter.py
+"""
+from fastapi import APIRouter, WebSocket, HTTPException
+from fastapi.responses import StreamingResponse, JSONResponse, FileResponse
+
+from src.infrastructure.fastapi.websocket_server import websocket_endpoint
+from src.infrastructure.open_cv.stream_camera_usb import OpenCVCameraStreamUSB
+from src.infrastructure.open_cv.stream_camera_wifi import OpenCVCameraStreamWiFi
+from src.infrastructure.open_cv.stream_imagen import ImageStream
+from src.infrastructure.open_cv.draw_line_on_frame import FrameDrawer
+from src.shared.config import get_config
+
+router = APIRouter(tags=["stream"])
+
+# Diccionario global para gestionar múltiples streams
+streams = {}
+
+def get_stream_instance(stream_type: str, index: int):
+    "Obtiene o crea la instancia de stream correspondiente."
+    key = (stream_type, index)
+    if key in streams:
+        return streams[key]
+    config = get_config()
+    frame_drawer = FrameDrawer()
+    if stream_type == "usb":
+        instance = OpenCVCameraStreamUSB(draw_line_fn=frame_drawer.draw_horizontal_yellow_line,
+                                         camera_index=index)
+    elif stream_type == "wifi":
+        # Para WiFi, se asume que la config tiene una lista de cámaras WiFi
+        wifi_list = config.get("WIFI_CAMERAS", [])
+        if index >= len(wifi_list):
+            raise HTTPException(status_code=404, detail="Cámara WiFi no encontrada")
+        cam_conf = wifi_list[index]
+        instance = OpenCVCameraStreamWiFi(
+            ip=cam_conf["IP"],
+            user=cam_conf["USER"],
+            password=cam_conf["PASSWORD"],
+            draw_line_fn=frame_drawer.draw_horizontal_yellow_line
+        )
+    elif stream_type == "img":
+        img_list = config.get("IMAGE_PATHS", [])
+        if index >= len(img_list):
+            raise HTTPException(status_code=404, detail="Imagen no encontrada")
+        instance = ImageStream(
+            process_frame_callback=frame_drawer.draw_horizontal_yellow_line,
+            image_path=img_list[index]
+        )
+    else:
+        raise HTTPException(status_code=400, detail="Tipo de stream no soportado")
+    streams[key] = instance
+    return instance
+
+
+
+
+# Endpoints dinámicos para USB, WiFi, Imagen
+@router.get("/usb/{index}/stream.mjpg")
+def stream_usb_endpoint(index: int):
+    "Streaming MJPEG para cámara USB en el índice dado"
+    try:
+        instance = get_stream_instance("usb", index)
+        adapter = FastAPICameraHTTPAdapter(instance)
+        return adapter.stream_mjpeg()
+    except HTTPException as e:
+        return JSONResponse(status_code=e.status_code, content={"error": e.detail})
+
+@router.get("/wifi/{index}/stream.mjpg")
+def stream_wifi_endpoint(index: int):
+    "Streaming MJPEG para cámara WiFi en el índice dado"
+    try:
+        instance = get_stream_instance("wifi", index)
+        adapter = FastAPICameraHTTPAdapter(instance)
+        return adapter.stream_mjpeg()
+    except HTTPException as e:
+        return JSONResponse(status_code=e.status_code, content={"error": e.detail})
+
+@router.get("/img/{index}/stream.mjpg")
+def stream_img_endpoint(index: int):
+    "Streaming MJPEG para imagen en el índice dado"
+    try:
+        instance = get_stream_instance("img", index)
+        adapter = FastAPICameraHTTPAdapter(instance)
+        return adapter.stream_mjpeg()
+    except HTTPException as e:
+        return JSONResponse(status_code=e.status_code, content={"error": e.detail})
+
+@router.get("/usb/{index}/resolution")
+def resolution_usb_endpoint(index: int):
+    "Obtiene la resolución del stream MJPEG para la cámara USB en el índice dado"
+    try:
+        instance = get_stream_instance("usb", index)
+        adapter = FastAPICameraHTTPAdapter(instance)
+        return adapter.resolution()
+    except HTTPException as e:
+        return JSONResponse(status_code=e.status_code, content={"error": e.detail})
+
+@router.get("/wifi/{index}/resolution")
+def resolution_wifi_endpoint(index: int):
+    "Obtiene la resolución del stream MJPEG para la cámara WiFi en el índice dado"
+    try:
+        instance = get_stream_instance("wifi", index)
+        adapter = FastAPICameraHTTPAdapter(instance)
+        return adapter.resolution()
+    except HTTPException as e:
+        return JSONResponse(status_code=e.status_code, content={"error": e.detail})
+
+@router.get("/img/{index}/resolution")
+def resolution_img_endpoint(index: int):
+    "Obtiene la resolución del stream MJPEG para la imagen en el índice dado"
+    try:
+        instance = get_stream_instance("img", index)
+        adapter = FastAPICameraHTTPAdapter(instance)
+        return adapter.resolution()
+    except HTTPException as e:
+        return JSONResponse(status_code=e.status_code, content={"error": e.detail})
+
+
+
+
+@router.get("/usb/{index}/snapshot.jpg")
+def snapshot_usb_endpoint(index: int):
+    "Toma un snapshot del stream MJPEG para la cámara USB en el índice dado"
+    try:
+        instance = get_stream_instance("usb", index)
+        adapter = FastAPICameraHTTPAdapter(instance)
+        return adapter.snapshot()
+    except HTTPException as e:
+        return JSONResponse(status_code=e.status_code, content={"error": e.detail})
+
+@router.get("/wifi/{index}/snapshot.jpg")
+def snapshot_wifi_endpoint(index: int):
+    "Toma un snapshot del stream MJPEG para la cámara WiFi en el índice dado"
+    try:
+        instance = get_stream_instance("wifi", index)
+        adapter = FastAPICameraHTTPAdapter(instance)
+        return adapter.snapshot()
+    except HTTPException as e:
+        return JSONResponse(status_code=e.status_code, content={"error": e.detail})
+
+@router.get("/img/{index}/snapshot.jpg")
+def snapshot_img_endpoint(index: int):
+    "Toma un snapshot del stream MJPEG para la imagen en el índice dado"
+    try:
+        instance = get_stream_instance("img", index)
+        adapter = FastAPICameraHTTPAdapter(instance)
+        return adapter.snapshot()
+    except HTTPException as e:
+        return JSONResponse(status_code=e.status_code, content={"error": e.detail})
+
+
+
+# El WebSocket se mantiene global, pero podría adaptarse para múltiples streams si se requiere
+@router.websocket("/ws")
+async def ws_endpoint(websocket: WebSocket):
+    "WebSocket para eventos o streaming en tiempo real"
+    await websocket_endpoint(websocket)
+class FastAPICameraHTTPAdapter:
+    "Adaptador HTTP para exponer los casos de uso de la cámara IP con FastAPI."
+    def __init__(self, camera_usecase):
+        self.camera_usecase = camera_usecase
+        self.width, self.height = self.camera_usecase.get_resolution()
+
+    def stream_mjpeg(self):
+        "Stream MJPEG."
+        return StreamingResponse(
+            self.camera_usecase.mjpeg_generator(quality=80),
+            media_type="multipart/x-mixed-replace; boundary=frame"
+        )
+
+    def resolution(self):
+        "Obtiene la resolución del stream de video."
+        return JSONResponse(content={"width": self.width, "height": self.height})
+
+    def snapshot(self):
+        "Toma un snapshot del stream de video."
+        fname = self.camera_usecase.save_snapshot()
+        if fname is None:
+            raise HTTPException(status_code=503, detail="No se pudo capturar frame")
+        return FileResponse(fname, media_type="image/jpeg")
+
+    def cleanup(self):
+        "Libera los recursos de la cámara."
+        self.camera_usecase.release()

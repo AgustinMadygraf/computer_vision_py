@@ -1,0 +1,7 @@
+.env
+__pycache__
+docs/todo.md
+log/*.log
+static/snapshots/!solapa.jpeg
+static/snapshots/*.jpg
+venv

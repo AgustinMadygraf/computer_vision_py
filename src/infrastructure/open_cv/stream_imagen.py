@@ -1,0 +1,88 @@
+"""
+Path: src/infrastructure/opencv_imagen_stream.py
+Clase para simular el stream de cámara usando una imagen fija en modo desarrollo.
+"""
+  # pylint: disable=no-member
+import cv2
+from src.entities.camera_stream import BaseCameraStream
+
+class ImageStream(BaseCameraStream):
+    "Clase para simular el stream de cámara usando una imagen fija en modo desarrollo."
+    def __init__(self, process_frame_callback, image_path=None):
+        super().__init__(process_frame_callback)
+        self.image_path = str(image_path) if image_path else None
+
+    def get_resolution(self):
+        "Devuelve la resolución de la imagen cargada."
+        try:
+            image = cv2.imread(self.image_path)
+            if image is None:
+                raise FileNotFoundError(f"No se pudo cargar la imagen: {self.image_path}")
+            height, width = image.shape[:2]
+            self.width = width
+            self.height = height
+            return super().get_resolution()
+        except FileNotFoundError as e:
+            print(f"[ERROR] get_resolution: {e}")
+            return None, None
+        except cv2.error as e:  # pylint: disable=catching-non-exception
+            print(f"[ERROR] get_resolution (cv2): {e}")
+            return None, None
+
+    def mjpeg_generator(self, quality=80):
+        "Generador MJPEG simulado para la imagen fija en formato MJPEG estándar."
+        try:
+            image = cv2.imread(self.image_path)
+            if image is None:
+                raise FileNotFoundError(f"No se pudo cargar la imagen: {self.image_path}")
+            # Aplica el callback para dibujar la línea
+            image = self.process_frame_callback(image)
+            encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), quality]
+            ret, jpeg = cv2.imencode('.jpg', image, encode_param)
+            if not ret:
+                raise RuntimeError("No se pudo codificar la imagen como JPEG")
+            _frame = jpeg.tobytes()
+            boundary = b"--frame"
+        except FileNotFoundError as e:
+            print(f"[ERROR] mjpeg_generator: {e}")
+            boundary = b"--frame"
+            header = b"Content-Type: text/plain\r\n\r\n"
+            error_msg = f"Error: {e}".encode()
+            while True:
+                yield boundary + b"\r\n" + header + error_msg + b"\r\n"
+        except cv2.error as e:  # pylint: disable=catching-non-exception
+            print(f"[ERROR] mjpeg_generator (cv2): {e}")
+            boundary = b"--frame"
+            header = b"Content-Type: text/plain\r\n\r\n"
+            error_msg = f"Error: {e}".encode()
+            while True:
+                yield boundary + b"\r\n" + header + error_msg + b"\r\n"
+        except RuntimeError as e:
+            print(f"[ERROR] mjpeg_generator (Runtime): {e}")
+            boundary = b"--frame"
+            header = b"Content-Type: text/plain\r\n\r\n"
+            error_msg = f"Error: {e}".encode()
+            while True:
+                yield boundary + b"\r\n" + header + error_msg + b"\r\n"
+
+    def save_snapshot(self, path=None):
+        "Guarda la imagen fija en el path indicado."
+        try:
+            image = cv2.imread(self.image_path)
+            if image is None:
+                raise FileNotFoundError(f"No se pudo cargar la imagen: {self.image_path}")
+            # Aplica el callback para dibujar la línea
+            image = self.process_frame_callback(image)
+            save_path = path or "snapshot.jpg"
+            cv2.imwrite(save_path, image)
+            return save_path
+        except FileNotFoundError as e:
+            print(f"[ERROR] save_snapshot (FileNotFoundError): {e}")
+            return None
+        except cv2.error as e:  # pylint: disable=catching-non-exception
+            print(f"[ERROR] save_snapshot (cv2): {e}")
+            return None
+
+    def release(self):
+        "No hay recursos que liberar en el modo imagen, pero se mantiene la interfaz."
+        pass # pylint: disable=unnecessary-pass
