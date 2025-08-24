@@ -6,6 +6,7 @@ Este backend permite exponer el stream de una cámara IP, obtener snapshots, con
 
 ---
 
+
 ## Endpoints HTTP
 
 ### 1. Página principal
@@ -13,6 +14,19 @@ Este backend permite exponer el stream de una cámara IP, obtener snapshots, con
 - **Método:** GET
 - **Descripción:** Devuelve la página principal con el stream MJPEG embebido.
 - **Respuesta:** HTML
+
+### 1b. Streams disponibles
+- **URL:** `/streams`
+- **Método:** GET
+- **Descripción:** Devuelve la lista de streams disponibles (USB, WiFi, imágenes) y sus índices/metadatos para que el frontend pueda mostrar solo las opciones válidas.
+- **Respuesta:** JSON
+  ```json
+  {
+    "usb": [ { "index": 0, "type": "usb", "name": "USB Camera 0" }, ... ],
+    "wifi": [ { "index": 0, "type": "wifi", "name": "WiFi Camera 0", "ip": "192.168.1.10" }, ... ],
+    "img": [ { "index": 0, "type": "img", "name": "Imagen 0", "path": "static/img0.jpg" }, ... ]
+  }
+  ```
 
 
 ### 2. Stream MJPEG (Múltiples fuentes)
@@ -100,12 +114,14 @@ Esto permite liberar recursos en el servidor y evitar conexiones abiertas innece
 ---
 
 
+
 ## Flujo de integración recomendado
 
-1. El frontend solicita `/usb/{index}/resolution`, `/wifi/{index}/resolution` o `/img/{index}/resolution` para conocer el tamaño del video de cada fuente.
-2. Muestra el stream embebiendo `/usb/{index}/stream.mjpg`, `/wifi/{index}/stream.mjpg` o `/img/{index}/stream.mjpg` en un `<img>`.
-3. Permite al usuario tomar snapshots solicitando `/usb/{index}/snapshot.jpg`, `/wifi/{index}/snapshot.jpg` o `/img/{index}/snapshot.jpg`.
-4. Se conecta al WebSocket `/ws` para recibir notificaciones en tiempo real sobre el estado de los streams.
+1. El frontend solicita `/streams` para obtener la lista de streams disponibles y sus índices.
+2. Solicita `/usb/{index}/resolution`, `/wifi/{index}/resolution` o `/img/{index}/resolution` para conocer el tamaño del video de cada fuente.
+3. Muestra el stream embebiendo `/usb/{index}/stream.mjpg`, `/wifi/{index}/stream.mjpg` o `/img/{index}/stream.mjpg` en un `<img>`.
+4. Permite al usuario tomar snapshots solicitando `/usb/{index}/snapshot.jpg`, `/wifi/{index}/snapshot.jpg` o `/img/{index}/snapshot.jpg`.
+5. Se conecta al WebSocket `/ws` para recibir notificaciones en tiempo real sobre el estado de los streams.
 
 ---
 
