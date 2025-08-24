@@ -8,22 +8,24 @@ import cv2
 from src.shared.config import get_env
 
 class CameraDiscoveryGateway:
-    """Gateway para descubrir cámaras USB y listar cámaras WiFi configuradas."""
+    "Gateway para descubrir cámaras USB y listar cámaras WiFi configuradas."
     def __init__(self, max_usb=5):
         self.max_usb = max_usb
 
     def discover_usb_cameras(self):
-        """Detecta cámaras USB conectadas y retorna una lista de índices disponibles."""
+        "Detecta cámaras USB conectadas y retorna una lista de índices disponibles."
         usb_cameras = []
         for idx in range(self.max_usb):
+            cap = None
             try:
                 cap = cv2.VideoCapture(idx)
                 if cap is not None and cap.isOpened():
                     usb_cameras.append(idx)
+            except cv2.error:# pylint: disable=catching-non-exception
+                pass
+            finally:
                 if cap:
                     cap.release()
-            except cv2.error: # pylint: disable=catching-non-exception
-                pass
         return usb_cameras
 
     def get_wifi_cameras(self):
@@ -40,7 +42,6 @@ class CameraDiscoveryGateway:
                         "password": parts[2].strip()
                     })
         else:
-            # Fallback a una sola cámara WiFi
             ip = get_env("IP")
             user = get_env("USER")
             password = get_env("PASSWORD")

@@ -1,3 +1,4 @@
+# pylint: disable=no-member
 """
 Path: src/infrastructure/draw_line_on_frame.py
 Implementación concreta de IFrameDrawer usando OpenCV.

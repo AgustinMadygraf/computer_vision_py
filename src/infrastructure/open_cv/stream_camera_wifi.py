@@ -1,5 +1,4 @@
 # pylint: disable=no-member
-
 """
 Path: src/infrastructure/opencv_camera_stream_wifi.py
 """
