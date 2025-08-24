@@ -15,7 +15,10 @@ notifier = StreamEventNotifier()
 # Listener para emitir eventos a todos los clientes conectados
 def emit_event(event_name, payload):
     "Emite un evento a todos los clientes conectados."
-    print(f"[INFO] Emitiendo evento '{event_name}' a {len(connected_websockets)} clientes WebSocket.")
+    print(
+        f"[INFO] Emitiendo evento '{event_name}' a "
+        f"{len(connected_websockets)} clientes WebSocket."
+    )
     for ws in list(connected_websockets):
         try:
             asyncio.create_task(ws.send_json({"event": event_name, **(payload or {})}))

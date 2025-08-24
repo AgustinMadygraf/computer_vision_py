@@ -1,14 +1,5 @@
 Actúa como un auditor experto en Arquitectura de Software, especializado en la implementación de Arquitectura Limpia (Clean Architecture) en sistemas existentes.
 
-Quiero adaptar el proyecto a una estructura basada en Clean Architecture, incorporando los siguientes módulos:
-
-- entities/
-- use_cases/
-- interface_adapters/presenter/
-- interface_adapters/gateway/
-- interface_adapters/controllers/
-- infrastructure/
-
 ### Instrucciones
 
 1. Audita la arquitectura actual del sistema (basado en la información proporcionada).

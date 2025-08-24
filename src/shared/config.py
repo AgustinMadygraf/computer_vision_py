@@ -1,9 +1,11 @@
+# pylint: disable=no-member
 """
 Path: src/shared/config.py
 Configura y expone las variables de entorno necesarias para la aplicación.
 """
 
 import os
+import cv2
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -25,6 +27,31 @@ def get_config():
     if config["MODE"] is None:
         print("[ERROR] La variable de entorno MODE no está definida. Verifica tu archivo .env.")
         exit(1)
+
+    # Detectar cámaras USB conectadas
+    usb_cameras = []
+    max_tested = 5  # Número máximo de índices a probar
+    for idx in range(max_tested):
+        try:
+            cap = cv2.VideoCapture(idx)
+            if cap is not None and cap.isOpened():
+                usb_cameras.append(idx)
+            if cap:
+                cap.release()
+        except (cv2.error, OSError):  # pylint: disable=catching-non-exception
+            pass
+
+    # Listar cámaras WiFi (por ahora solo una, pero se puede extender)
+    wifi_cameras = []
+    if config["IP"]:
+        wifi_cameras.append({
+            "ip": config["IP"],
+            "user": config["USER"],
+            "password": config["PASSWORD"]
+        })
+
+    config["USB_CAMERAS"] = usb_cameras
+    config["WIFI_CAMERAS"] = wifi_cameras
     return config
 
 def get_static_path():
