@@ -11,8 +11,16 @@ from src.infrastructure.open_cv.stream_camera_wifi import OpenCVCameraStreamWiFi
 from src.infrastructure.open_cv.stream_imagen import ImageStream
 from src.infrastructure.open_cv.draw_line_on_frame import FrameDrawer
 from src.shared.config import get_config
+from src.use_cases.discover_cameras_usecase import DiscoverCamerasUseCase
 
 router = APIRouter(tags=["stream"])
+
+@router.get("/cameras/refresh", tags=["stream"])
+def refresh_cameras():
+    "Endpoint para recargar y devolver la lista actual de cámaras USB y WiFi."
+    usecase = DiscoverCamerasUseCase()
+    cameras = usecase.execute()
+    return {"cameras": cameras}
 
 streams = {}
 

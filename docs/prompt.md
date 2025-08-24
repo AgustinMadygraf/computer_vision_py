@@ -38,14 +38,3 @@ Usa un formato claro, paso a paso, con encabezados.
 - Descripción de responsabilidades
 
 
-
-
----
-
-Con base en el análisis anterior, responde las siguientes preguntas de forma directa y técnica:
-
-1. ¿Cuál es el primer archivo que debemos modificar?
-2. ¿Cuál es el archivo que debemos crear?
-3. ¿Cuál es la razón técnica detrás de estas decisiones?
-
-Proporciona también fragmentos de código de ejemplo si es posible, para mostrar cómo quedaría implementado el cambio en el contexto de Clean Architecture.
