@@ -1,3 +1,4 @@
+
 """
 Path: infrastructure/fastapi/streamer_adapter.py
 """
@@ -9,9 +10,9 @@ from src.infrastructure.fastapi.websocket_server import websocket_endpoint
 from src.infrastructure.open_cv.stream_camera_usb import OpenCVCameraStreamUSB
 from src.infrastructure.open_cv.stream_camera_wifi import OpenCVCameraStreamWiFi
 from src.infrastructure.open_cv.stream_imagen import ImageStream
-from src.infrastructure.open_cv.draw_line_on_frame import FrameDrawer
 from src.shared.config import get_config
 from src.use_cases.discover_cameras_usecase import DiscoverCamerasUseCase
+from src.interface_adapters.controllers.stream_controller import StreamController
 
 router = APIRouter(tags=["stream"])
 
@@ -30,94 +31,27 @@ def get_stream_instance(stream_type: str, index: int):
     if key in streams:
         return streams[key]
     config = get_config()
-    frame_drawer = FrameDrawer()
+    stream_controller = StreamController()
     if stream_type == "usb":
-        instance = OpenCVCameraStreamUSB(draw_line_fn=frame_drawer.draw_horizontal_yellow_line,
-                                         camera_index=index)
+        instance = OpenCVCameraStreamUSB(stream_controller.draw_line_on_frame, camera_index=index)
     elif stream_type == "wifi":
-        # Para WiFi, se asume que la config tiene una lista de cámaras WiFi
         wifi_list = config.get("WIFI_CAMERAS", [])
         if index >= len(wifi_list):
             raise HTTPException(status_code=404, detail="Cámara WiFi no encontrada")
         cam_conf = wifi_list[index]
         instance = OpenCVCameraStreamWiFi(
-            ip=cam_conf["IP"],
-            user=cam_conf["USER"],
-            password=cam_conf["PASSWORD"],
-            draw_line_fn=frame_drawer.draw_horizontal_yellow_line
+            cam_conf["ip"],
+            cam_conf.get("user", ""),
+            cam_conf.get("password", ""),
+            stream_controller.draw_line_on_frame
         )
     elif stream_type == "img":
-        img_list = config.get("IMAGE_PATHS", [])
-        if index >= len(img_list):
-            raise HTTPException(status_code=404, detail="Imagen no encontrada")
-        instance = ImageStream(
-            process_frame_callback=frame_drawer.draw_horizontal_yellow_line,
-            image_path=img_list[index]
-        )
+        image_path = config.get("IMAGE_PATH")
+        instance = ImageStream(stream_controller.draw_line_on_frame, image_path=image_path)
     else:
         raise HTTPException(status_code=400, detail="Tipo de stream no soportado")
     streams[key] = instance
     return instance
-
-@router.get("/usb/{index}/stream.mjpg")
-def stream_usb_endpoint(index: int):
-    "Streaming MJPEG para cámara USB en el índice dado"
-    try:
-        instance = get_stream_instance("usb", index)
-        adapter = FastAPICameraHTTPAdapter(instance)
-        return adapter.stream_mjpeg()
-    except HTTPException as e:
-        return JSONResponse(status_code=e.status_code, content={"error": e.detail})
-
-@router.get("/wifi/{index}/stream.mjpg")
-def stream_wifi_endpoint(index: int):
-    "Streaming MJPEG para cámara WiFi en el índice dado"
-    try:
-        instance = get_stream_instance("wifi", index)
-        adapter = FastAPICameraHTTPAdapter(instance)
-        return adapter.stream_mjpeg()
-    except HTTPException as e:
-        return JSONResponse(status_code=e.status_code, content={"error": e.detail})
-
-@router.get("/img/{index}/stream.mjpg")
-def stream_img_endpoint(index: int):
-    "Streaming MJPEG para imagen en el índice dado"
-    try:
-        instance = get_stream_instance("img", index)
-        adapter = FastAPICameraHTTPAdapter(instance)
-        return adapter.stream_mjpeg()
-    except HTTPException as e:
-        return JSONResponse(status_code=e.status_code, content={"error": e.detail})
-
-@router.get("/usb/{index}/resolution")
-def resolution_usb_endpoint(index: int):
-    "Obtiene la resolución del stream MJPEG para la cámara USB en el índice dado"
-    try:
-        instance = get_stream_instance("usb", index)
-        adapter = FastAPICameraHTTPAdapter(instance)
-        return adapter.resolution()
-    except HTTPException as e:
-        return JSONResponse(status_code=e.status_code, content={"error": e.detail})
-
-@router.get("/wifi/{index}/resolution")
-def resolution_wifi_endpoint(index: int):
-    "Obtiene la resolución del stream MJPEG para la cámara WiFi en el índice dado"
-    try:
-        instance = get_stream_instance("wifi", index)
-        adapter = FastAPICameraHTTPAdapter(instance)
-        return adapter.resolution()
-    except HTTPException as e:
-        return JSONResponse(status_code=e.status_code, content={"error": e.detail})
-
-@router.get("/img/{index}/resolution")
-def resolution_img_endpoint(index: int):
-    "Obtiene la resolución del stream MJPEG para la imagen en el índice dado"
-    try:
-        instance = get_stream_instance("img", index)
-        adapter = FastAPICameraHTTPAdapter(instance)
-        return adapter.resolution()
-    except HTTPException as e:
-        return JSONResponse(status_code=e.status_code, content={"error": e.detail})
 
 @router.get("/usb/{index}/snapshot.jpg")
 def snapshot_usb_endpoint(index: int):
@@ -209,3 +143,17 @@ def available_streams():
             "path": path
         })
     return JSONResponse(content=result)
+
+@router.get("/usb/{index}/stream.mjpg")
+def stream_usb_endpoint(index: int):
+    "Streaming MJPEG para cámara USB en el índice dado"
+    config = get_config()
+    usb_cameras = config.get("USB_CAMERAS", [])
+    if index not in usb_cameras:
+        return JSONResponse(status_code=404, content={"error": f"No se encontró cámara USB en el índice {index}"})
+    try:
+        instance = get_stream_instance("usb", index)
+        adapter = FastAPICameraHTTPAdapter(instance)
+        return adapter.stream_mjpeg()
+    except HTTPException as e:
+        return JSONResponse(status_code=e.status_code, content={"error": e.detail})

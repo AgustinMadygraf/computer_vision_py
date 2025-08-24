@@ -9,11 +9,12 @@ from datetime import datetime
 import cv2
 
 from src.entities.camera_stream import BaseCameraStream
+from src.entities.frame_drawer import IFrameDrawer
 
 class OpenCVCameraStreamUSB(BaseCameraStream):
     "Stream de video USB utilizando OpenCV."
-    def __init__(self, draw_line_fn, camera_index=0):
-        super().__init__(draw_line_fn)
+    def __init__(self, frame_drawer: IFrameDrawer, camera_index=0):
+        super().__init__(frame_drawer)
         self.camera_index = camera_index
         try:
             self.cap = cv2.VideoCapture(self.camera_index) # pylint: disable=catching-non-exception

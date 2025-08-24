@@ -13,10 +13,16 @@ from src.infrastructure.fastapi.stream_adapter import FastAPICameraHTTPAdapter
 
 def create_camera_stream() -> CameraStreamInterface:
     "Crea un stream de cámara según la configuración dinámica de hardware."
+    # Instanciar dependencias core
+    # Si se requiere frame_drawer para wiring, instanciar aquí y pasar explícitamente
     cameras_usecase = DiscoverCamerasUseCase()
     cameras = cameras_usecase.execute()
     image_path = get_env("IMAGE_PATH")
     select_stream_usecase = SelectCameraStreamUseCase(cameras, image_path)
+    # Si select_stream_usecase requiere draw_line_usecase, pásalo aquí
+    # (ajustar constructor si es necesario)
+    # Ejemplo:
+    # select_stream_usecase = SelectCameraStreamUseCase(cameras, image_path, _frame_drawer)
     return select_stream_usecase.execute()
 
 def get_app():

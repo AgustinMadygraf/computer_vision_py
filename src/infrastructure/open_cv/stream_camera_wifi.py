@@ -8,11 +8,12 @@ from time import sleep
 from datetime import datetime
 import cv2
 from src.entities.camera_stream import BaseCameraStream
+from src.entities.frame_drawer import IFrameDrawer
 
 class OpenCVCameraStreamWiFi(BaseCameraStream):
     "Stream de video RTSP sobre WiFi utilizando OpenCV."
-    def __init__(self, ip, user, password, draw_line_fn):
-        super().__init__(draw_line_fn)
+    def __init__(self, ip, user, password, frame_drawer: IFrameDrawer):
+        super().__init__(frame_drawer)
         try:
             print(f"[INFO] Inicializando OpenCVCameraStreamWiFi con IP={ip}, USER={user}")
             os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp|stimeout;5001000"

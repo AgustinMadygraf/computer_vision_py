@@ -1,15 +1,17 @@
+# pylint: disable=no-member
 """
 Path: src/infrastructure/opencv_imagen_stream.py
 Clase para simular el stream de cámara usando una imagen fija en modo desarrollo.
 """
-  # pylint: disable=no-member
+
 import cv2
 from src.entities.camera_stream import BaseCameraStream
+from src.entities.frame_drawer import IFrameDrawer
 
 class ImageStream(BaseCameraStream):
     "Clase para simular el stream de cámara usando una imagen fija en modo desarrollo."
-    def __init__(self, process_frame_callback, image_path=None):
-        super().__init__(process_frame_callback)
+    def __init__(self, frame_drawer: IFrameDrawer, image_path=None):
+        super().__init__(frame_drawer)
         self.image_path = str(image_path) if image_path else None
 
     def get_resolution(self):
