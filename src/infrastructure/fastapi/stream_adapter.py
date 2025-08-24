@@ -1,6 +1,7 @@
 """
 Path: infrastructure/fastapi/streamer_adapter.py
 """
+
 from fastapi import APIRouter, WebSocket, HTTPException
 from fastapi.responses import StreamingResponse, JSONResponse, FileResponse
 
@@ -13,7 +14,6 @@ from src.shared.config import get_config
 
 router = APIRouter(tags=["stream"])
 
-# Diccionario global para gestionar múltiples streams
 streams = {}
 
 def get_stream_instance(stream_type: str, index: int):
@@ -51,10 +51,6 @@ def get_stream_instance(stream_type: str, index: int):
     streams[key] = instance
     return instance
 
-
-
-
-# Endpoints dinámicos para USB, WiFi, Imagen
 @router.get("/usb/{index}/stream.mjpg")
 def stream_usb_endpoint(index: int):
     "Streaming MJPEG para cámara USB en el índice dado"
@@ -115,9 +111,6 @@ def resolution_img_endpoint(index: int):
     except HTTPException as e:
         return JSONResponse(status_code=e.status_code, content={"error": e.detail})
 
-
-
-
 @router.get("/usb/{index}/snapshot.jpg")
 def snapshot_usb_endpoint(index: int):
     "Toma un snapshot del stream MJPEG para la cámara USB en el índice dado"
@@ -148,9 +141,6 @@ def snapshot_img_endpoint(index: int):
     except HTTPException as e:
         return JSONResponse(status_code=e.status_code, content={"error": e.detail})
 
-
-
-# El WebSocket se mantiene global, pero podría adaptarse para múltiples streams si se requiere
 @router.websocket("/ws")
 async def ws_endpoint(websocket: WebSocket):
     "WebSocket para eventos o streaming en tiempo real"
@@ -182,3 +172,32 @@ class FastAPICameraHTTPAdapter:
     def cleanup(self):
         "Libera los recursos de la cámara."
         self.camera_usecase.release()
+
+@router.get("/streams")
+def available_streams():
+    "Devuelve la lista de streams disponibles para el frontend."
+    config = get_config()
+    result = {"usb": [], "wifi": [], "img": []}
+    # USB: se asume que los índices válidos son 0..N-1 (puede ajustarse según hardware)
+    usb_count = config.get("USB_COUNT", 1)
+    for i in range(usb_count):
+        result["usb"].append({"index": i, "type": "usb", "name": f"USB Camera {i}"})
+    # WiFi: lista de cámaras en config
+    wifi_list = config.get("WIFI_CAMERAS", [])
+    for i, cam in enumerate(wifi_list):
+        result["wifi"].append({
+            "index": i,
+            "type": "wifi",
+            "name": cam.get("NAME", f"WiFi Camera {i}"),
+            "ip": cam.get("IP")
+        })
+    # Imagen: lista de rutas en config
+    img_list = config.get("IMAGE_PATHS", [])
+    for i, path in enumerate(img_list):
+        result["img"].append({
+            "index": i,
+            "type": "img",
+            "name": f"Imagen {i}",
+            "path": path
+        })
+    return JSONResponse(content=result)
