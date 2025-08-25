@@ -19,7 +19,9 @@ router = APIRouter(tags=["stream"])
 @router.get("/cameras/refresh", tags=["stream"])
 def refresh_cameras():
     "Endpoint para recargar y devolver la lista actual de cámaras USB y WiFi."
-    usecase = DiscoverCamerasUseCase()
+    usb_gateway = OpenCVCameraStreamUSB()
+    wifi_gateway = OpenCVCameraStreamWiFi(ip="", user="", password="")
+    usecase = DiscoverCamerasUseCase(usb_gateway=usb_gateway, wifi_gateway=wifi_gateway)
     cameras = usecase.execute()
     return {"cameras": cameras}
 

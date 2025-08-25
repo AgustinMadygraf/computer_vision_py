@@ -77,7 +77,8 @@ class OpenCVCameraStreamUSB(BaseCameraStream):
             ret, jpeg = cv2.imencode('.jpg', frame, encode_params)
             if not ret:
                 continue
-#            self.logger.debug("Frame enviado al frontend: ws=%s, user_id=%s, tipo=%s", ws, user_id, frame_tipo) # debug comentado porque es muy verboso
+#            self.logger.debug("Frame enviado al frontend: ws=%s, # debug comentado porque es muy verboso
+#                                   user_id=%s, tipo=%s", ws, user_id, frame_tipo) # debug comentado porque es muy verboso
             boundary = b"--frame"
             header = b"Content-Type: image/jpeg\r\n\r\n"
             yield boundary + b"\r\n" + header + jpeg.tobytes() + b"\r\n"

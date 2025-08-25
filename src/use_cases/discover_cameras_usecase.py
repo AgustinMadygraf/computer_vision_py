@@ -2,14 +2,12 @@
 Path: src/use_cases/discover_cameras_usecase.py
 Caso de uso para relevamiento dinámico de cámaras USB y WiFi.
 """
-from src.interface_adapters.gateway.camera_discovery_gateway import CameraDiscoveryGateway
-from src.interface_adapters.gateway.wifi_credentials_gateway import WifiCredentialsGateway
 
 class DiscoverCamerasUseCase:
     "Caso de uso para obtener la lista de cámaras disponibles (USB y WiFi)."
-    def __init__(self, usb_gateway=None, wifi_gateway=None):
-        self.usb_gateway = usb_gateway or CameraDiscoveryGateway()
-        self.wifi_gateway = wifi_gateway or WifiCredentialsGateway()
+    def __init__(self, usb_gateway, wifi_gateway):
+        self.usb_gateway = usb_gateway
+        self.wifi_gateway = wifi_gateway
 
     def execute(self):
         "Retorna un diccionario con listas de cámaras USB y WiFi."
