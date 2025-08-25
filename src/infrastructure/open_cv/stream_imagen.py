@@ -9,12 +9,17 @@ import cv2
 from src.entities.camera_stream import BaseCameraStream
 from src.entities.frame_drawer import IFrameDrawer
 from src.interface_adapters.controllers.stream_controller import StreamController
+from src.shared.logger import get_logger
 
 class ImageStream(BaseCameraStream):
+    logger = get_logger("ImageStream")
     "Clase para simular el stream de cámara usando una imagen fija en modo desarrollo."
     def __init__(self, frame_drawer: IFrameDrawer, image_path=None):
         super().__init__(frame_drawer)
         self.image_path = str(image_path) if image_path else None
+        self.stream_controller = StreamController()
+        # El callback ahora respeta el estado del filtro
+        self.process_frame_callback = lambda frame, ws=None: self.stream_controller.draw_line_on_frame(frame) if self.stream_controller.get_filtro_activo(ws) else frame
 
     def get_resolution(self):
         "Devuelve la resolución de la imagen cargada."
@@ -27,10 +32,10 @@ class ImageStream(BaseCameraStream):
             self.height = height
             return super().get_resolution()
         except FileNotFoundError as e:
-            print(f"[ERROR] get_resolution: {e}")
+            self.logger.error("get_resolution: %s", e)
             return None, None
         except cv2.error as e:  # pylint: disable=catching-non-exception
-            print(f"[ERROR] get_resolution (cv2): {e}")
+            self.logger.error("get_resolution (cv2): %s", e)
             return None, None
 
     def mjpeg_generator(self, quality=80, ws=None):
@@ -52,21 +57,21 @@ class ImageStream(BaseCameraStream):
             header = b"Content-Type: image/jpeg\r\n\r\n"
             yield boundary + b"\r\n" + header + _frame + b"\r\n"
         except FileNotFoundError as e:
-            print(f"[ERROR] mjpeg_generator: {e}")
+            self.logger.error("mjpeg_generator: %s", e)
             boundary = b"--frame"
             header = b"Content-Type: text/plain\r\n\r\n"
             error_msg = f"Error: {e}".encode()
             while True:
                 yield boundary + b"\r\n" + header + error_msg + b"\r\n"
         except cv2.error as e:  # pylint: disable=catching-non-exception
-            print(f"[ERROR] mjpeg_generator (cv2): {e}")
+            self.logger.error("mjpeg_generator (cv2): %s", e)
             boundary = b"--frame"
             header = b"Content-Type: text/plain\r\n\r\n"
             error_msg = f"Error: {e}".encode()
             while True:
                 yield boundary + b"\r\n" + header + error_msg + b"\r\n"
         except RuntimeError as e:
-            print(f"[ERROR] mjpeg_generator (Runtime): {e}")
+            self.logger.error("mjpeg_generator (Runtime): %s", e)
             boundary = b"--frame"
             header = b"Content-Type: text/plain\r\n\r\n"
             error_msg = f"Error: {e}".encode()
@@ -85,10 +90,10 @@ class ImageStream(BaseCameraStream):
             cv2.imwrite(save_path, image)
             return save_path
         except FileNotFoundError as e:
-            print(f"[ERROR] save_snapshot (FileNotFoundError): {e}")
+            self.logger.error("save_snapshot (FileNotFoundError): %s", e)
             return None
         except cv2.error as e:  # pylint: disable=catching-non-exception
-            print(f"[ERROR] save_snapshot (cv2): {e}")
+            self.logger.error("save_snapshot (cv2): %s", e)
             return None
 
     def release(self):

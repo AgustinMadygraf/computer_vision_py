@@ -7,7 +7,10 @@ Configura y expone las variables de entorno necesarias para la aplicación.
 import os
 import cv2
 from dotenv import load_dotenv
+from src.shared.logger import get_logger
 
+
+logger = get_logger("Config")
 load_dotenv()
 
 def get_env(var_name, default=None):
@@ -25,7 +28,7 @@ def get_config():
     }
     # Validar variables críticas
     if config["MODE"] is None:
-        print("[ERROR] La variable de entorno MODE no está definida. Verifica tu archivo .env.")
+        logger.error("La variable de entorno MODE no está definida. Verifica tu archivo .env.")
         exit(1)
 
     # Detectar cámaras USB conectadas

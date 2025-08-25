@@ -6,20 +6,20 @@ Servidor WebSocket para notificaciones en tiempo real usando FastAPI.
 import asyncio
 from fastapi import WebSocket
 from starlette.websockets import WebSocketDisconnect
+from src.shared.logger import get_logger
 
 from src.application.stream_event_notifier import StreamEventNotifier
 from src.interface_adapters.controllers.stream_controller import StreamController
 
+
+logger = get_logger("WebSocketServer")
 connected_websockets = set()
 notifier = StreamEventNotifier()
 
 # Listener para emitir eventos a todos los clientes conectados
 def emit_event(event_name, payload):
     "Emite un evento a todos los clientes conectados."
-    print(
-        f"[INFO] Emitiendo evento '{event_name}' a "
-        f"{len(connected_websockets)} clientes WebSocket."
-    )
+    logger.info("Emitiendo evento '%s' a %d clientes WebSocket.", event_name, len(connected_websockets))
     for ws in list(connected_websockets):
         try:
             asyncio.create_task(ws.send_json({"event": event_name, **(payload or {})}))
@@ -32,7 +32,7 @@ async def websocket_endpoint(websocket: WebSocket):
     "Maneja la conexión WebSocket."
     await websocket.accept()
     connected_websockets.add(websocket)
-    print(f"[INFO] Cliente WebSocket conectado. Total: {len(connected_websockets)}")
+    logger.info("Cliente WebSocket conectado. Total: %d", len(connected_websockets))
     # Estado del filtro por conexión coordinado con el controlador
     stream_controller = StreamController()
     try:
@@ -52,10 +52,10 @@ async def websocket_endpoint(websocket: WebSocket):
                 await websocket.send_json({"message": "Filtro desactivado"})
             # El controlador mantiene el estado por conexión
     except (WebSocketDisconnect, RuntimeError):
-        print("[INFO] WebSocket desconectado por el cliente.")
+        logger.info("WebSocket desconectado por el cliente.")
     except asyncio.CancelledError as e:
-        print(f"[INFO] WebSocket task cancelada: {e}")
+        logger.info("WebSocket task cancelada: %s", e)
     finally:
         stream_controller.remove_ws(websocket)
         connected_websockets.discard(websocket)
-        print(f"[INFO] Cliente WebSocket eliminado. Total: {len(connected_websockets)}")
+        logger.info("Cliente WebSocket eliminado. Total: %d", len(connected_websockets))

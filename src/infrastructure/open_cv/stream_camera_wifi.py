@@ -10,13 +10,18 @@ import cv2
 from src.entities.camera_stream import BaseCameraStream
 from src.entities.frame_drawer import IFrameDrawer
 from src.interface_adapters.controllers.stream_controller import StreamController
+from src.shared.logger import get_logger
 
 class OpenCVCameraStreamWiFi(BaseCameraStream):
     "Stream de video RTSP sobre WiFi utilizando OpenCV."
+    logger = get_logger("OpenCVCameraStreamWiFi")
     def __init__(self, ip, user, password, frame_drawer: IFrameDrawer):
         super().__init__(frame_drawer)
+        self.stream_controller = StreamController()
+        # El callback ahora respeta el estado del filtro
+        self.process_frame_callback = lambda frame, ws=None: self.stream_controller.draw_line_on_frame(frame) if self.stream_controller.get_filtro_activo(ws) else frame
         try:
-            print(f"[INFO] Inicializando OpenCVCameraStreamWiFi con IP={ip}, USER={user}")
+            self.logger.info("Inicializando OpenCVCameraStreamWiFi con IP=%s, USER=%s", ip, user)
             os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp|stimeout;5001000"
             self.rtsp_url = (
                 f"rtsp://{ip}:554/"
@@ -25,44 +30,44 @@ class OpenCVCameraStreamWiFi(BaseCameraStream):
                 f"channel=1&"
                 f"stream=0.sdp"
             )
-            print(f"[INFO] RTSP URL: {self.rtsp_url}")
+            self.logger.info("RTSP URL: %s", self.rtsp_url)
             self.cap = cv2.VideoCapture(self.rtsp_url, cv2.CAP_FFMPEG)
             if not self.cap.isOpened():
-                print("[ERROR] No se pudo abrir el stream RTSP con OpenCV.")
+                self.logger.error("No se pudo abrir el stream RTSP con OpenCV.")
                 raise RuntimeError("No se pudo abrir el stream RTSP con OpenCV.")
             ok = False
             for i in range(20):
                 try:
                     ok, _frame = self.cap.read()
                 except cv2.error as e: # pylint: disable=catching-non-exception
-                    print(f"[ERROR] Error al leer frame inicial: {e}")
+                    self.logger.error("Error al leer frame inicial: %s", e)
                     ok = False
                 if ok:
-                    print(f"[INFO] Frame inicial leído correctamente en intento {i+1}.")
+                    self.logger.info("Frame inicial leído correctamente en intento %d.", i+1)
                     break
                 else:
-                    print(f"[WARN] Intento {i+1} fallido al leer frame inicial.")
+                    self.logger.warning("Intento %d fallido al leer frame inicial.", i+1)
                 sleep(0.1)
             if not ok:
-                print("[ERROR] No se pudo obtener el primer frame del RTSP.")
+                self.logger.error("No se pudo obtener el primer frame del RTSP.")
                 raise RuntimeError("No se pudo obtener el primer frame del RTSP.")
             self.width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
             self.height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-            print(f"[INFO] Resolución de cámara WiFi: {self.width}x{self.height}")
+            self.logger.info("Resolución de cámara WiFi: %dx%d", self.width, self.height)
         except (cv2.error, OSError) as e: # pylint: disable=catching-non-exception
-            print(f"[CRITICAL] Error crítico al inicializar el stream de cámara: {e}")
+            self.logger.critical("Error crítico al inicializar el stream de cámara: %s", e)
             raise
 
     def get_resolution(self):
         "Obtiene la resolución del stream de video."
         try:
             if self.cap and self.cap.isOpened():
-                print(f"[INFO] Resolución actual: {self.width}x{self.height}")
+                self.logger.info("Resolución actual: %dx%d", self.width, self.height)
                 return super().get_resolution()
-            print("[WARN] get_resolution: Cámara no abierta.")
+            self.logger.warning("get_resolution: Cámara no abierta.")
             return None
         except (cv2.error, OSError) as e: # pylint: disable=catching-non-exception
-            print(f"[ERROR] get_resolution: {e}")
+            self.logger.error("get_resolution: %s", e)
             return None
 
     def read_frame(self, max_retries=3):
@@ -72,47 +77,44 @@ class OpenCVCameraStreamWiFi(BaseCameraStream):
                 try:
                     _ok, _frame = self.cap.read()
                 except cv2.error as e: # pylint: disable=catching-non-exception
-                    print(f"[ERROR] Error al leer frame: {e}")
+                    self.logger.error("Error al leer frame: %s", e)
                     _ok, _frame = False, None
                 if _ok and _frame is not None:
                     return _frame
                 else:
-                    print(f"[WARN] Frame no leído en intento {i+1}.")
+                    self.logger.warning("Frame no leído en intento %d.", i+1)
             else:
-                print(f"[WARN] Cámara no abierta en intento {i+1}.")
+                self.logger.warning("Cámara no abierta en intento %d.", i+1)
             self._reconnect()
             sleep(0.1)
-        print("[ERROR] No se pudo leer frame de la cámara WiFi tras varios intentos.")
+        self.logger.error("No se pudo leer frame de la cámara WiFi tras varios intentos.")
         return None
 
     def _reconnect(self):
         "Intenta reabrir el stream RTSP si se perdió la conexión."
         try:
-            print("[INFO] Intentando reconectar el stream RTSP...")
+            self.logger.info("Intentando reconectar el stream RTSP...")
             self.cap.release()
         except cv2.error as e: # pylint: disable=catching-non-exception
-            print(f"[ERROR] Error al liberar recursos de la cámara: {e}")
+            self.logger.error("Error al liberar recursos de la cámara: %s", e)
         try:
             self.cap = cv2.VideoCapture(self.rtsp_url, cv2.CAP_FFMPEG)
             for i in range(20):
                 try:
                     ok, _frame = self.cap.read()
                 except cv2.error as e: # pylint: disable=catching-non-exception
-                    print(f"[ERROR] Error al leer frame tras reconexión: {e}")
+                    self.logger.error("Error al leer frame tras reconexión: %s", e)
                     ok = False
                 if ok:
                     self.width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                     self.height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                    print(
-                        f"[INFO] Reconexión exitosa en intento {i+1}. "
-                        f"Resolución: {self.width}x{self.height}"
-                    )
+                    self.logger.info("Reconexión exitosa en intento %d. Resolución: %dx%d", i+1, self.width, self.height)
                     break
                 else:
-                    print(f"[WARN] Intento {i+1} fallido al leer frame tras reconexión.")
+                    self.logger.warning("Intento %d fallido al leer frame tras reconexión.", i+1)
                 sleep(0.1)
         except OSError as e:
-            print(f"[CRITICAL] Error crítico al reconectar el stream de cámara: {e}")
+            self.logger.critical("Error crítico al reconectar el stream de cámara: %s", e)
 
     def mjpeg_generator(self, quality=80, ws=None):
         "Generador de stream MJPEG con control de filtro por WebSocket."
@@ -122,7 +124,7 @@ class OpenCVCameraStreamWiFi(BaseCameraStream):
             try:
                 frame = self.read_frame()
                 if frame is None:
-                    print("[WARN] mjpeg_generator: frame es None.")
+                    self.logger.warning("mjpeg_generator: frame es None.")
                     sleep(0.05)
                     continue
                 filtro_activo = stream_controller.get_filtro_activo(ws) if ws else False
@@ -131,17 +133,17 @@ class OpenCVCameraStreamWiFi(BaseCameraStream):
                 frame = cv2.flip(frame, 0)  # Voltea la imagen verticalmente
                 ok, jpg = cv2.imencode(".jpg", frame, encode_params)
                 if not ok:
-                    print("[WARN] mjpeg_generator: cv2.imencode falló.")
+                    self.logger.warning("mjpeg_generator: cv2.imencode falló.")
                     continue
                 yield (b"--frame\r\n"
                        b"Content-Type: image/jpeg\r\n\r\n" +
                        jpg.tobytes() +
                        b"\r\n")
             except cv2.error as e: # pylint: disable=catching-non-exception
-                print(f"[ERROR] Error en mjpeg_generator: {e}")
+                self.logger.error("Error en mjpeg_generator: %s", e)
                 sleep(0.1)
             except RuntimeError as e:
-                print(f"[ERROR] Error inesperado en mjpeg_generator: {e}")
+                self.logger.error("Error inesperado en mjpeg_generator: %s", e)
                 sleep(0.1)
 
     def save_snapshot(self, path=None):
@@ -149,7 +151,7 @@ class OpenCVCameraStreamWiFi(BaseCameraStream):
         try:
             frame = self.read_frame()
             if frame is None:
-                print("[ERROR] No se pudo capturar snapshot WiFi.")
+                self.logger.error("No se pudo capturar snapshot WiFi.")
                 return None
             frame = self.process_frame_callback(frame)
             frame = cv2.flip(frame, 0)  # Voltea la imagen verticalmente
@@ -160,20 +162,20 @@ class OpenCVCameraStreamWiFi(BaseCameraStream):
                 path = os.path.join(snapshots_dir, filename)
             ok = cv2.imwrite(path, frame)
             if ok:
-                print(f"[INFO] Snapshot guardado en {path}")
+                self.logger.info("Snapshot guardado en %s", path)
                 return path
             else:
-                print("[ERROR] Guardando snapshot WiFi: cv2.imwrite falló")
+                self.logger.error("Guardando snapshot WiFi: cv2.imwrite falló")
                 return None
         except (cv2.error, OSError) as e: # pylint: disable=catching-non-exception
-            print(f"[ERROR] Guardando snapshot WiFi: {e}")
+            self.logger.error("Guardando snapshot WiFi: %s", e)
             return None
 
     def release(self):
         "Libera los recursos de la cámara."
         try:
-            print("[INFO] Liberando recursos de la cámara WiFi...")
+            self.logger.info("Liberando recursos de la cámara WiFi...")
             self.cap.release()
         except cv2.error as e: # pylint: disable=catching-non-exception
-            print(f"[ERROR] Error al liberar recursos de la cámara: {e}")
+            self.logger.error("Error al liberar recursos de la cámara: %s", e)
         super().release()
