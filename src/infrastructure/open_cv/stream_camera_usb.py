@@ -8,8 +8,8 @@ import os
 from datetime import datetime
 import cv2
 
+from src.use_cases.get_filter_state_usecase import GetFilterStateUseCase
 from src.entities.camera_stream import BaseCameraStream
-from src.interface_adapters.controllers.stream_controller import StreamController
 from src.shared.logger import get_logger
 class OpenCVCameraStreamUSB(BaseCameraStream):
     "Implementación de stream de cámara USB usando OpenCV."
@@ -59,12 +59,13 @@ class OpenCVCameraStreamUSB(BaseCameraStream):
     def mjpeg_generator(self, quality=80, ws=None):
         "Generador de stream MJPEG con control de filtro por WebSocket."
         encode_params = [int(cv2.IMWRITE_JPEG_QUALITY), quality]
-        stream_controller = StreamController()
+        get_filter_state = GetFilterStateUseCase()
         while True:
             frame = self.read_frame()
             if frame is None:
                 continue
-            filtro_activo = stream_controller.get_filtro_activo(ws)
+            user_id = getattr(ws, 'user_id', str(ws))
+            filtro_activo = get_filter_state.execute(user_id)
 #            self.logger.debug("mjpeg_generator: ws=%s, filtro_activo=%s", ws, filtro_activo)
             if filtro_activo:
 #                self.logger.debug("mjpeg_generator: aplicando filtro")

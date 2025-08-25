@@ -3,9 +3,14 @@ Path: src/interface_adapters/controllers/stream_controller.py
 Controlador para operaciones de stream, desacoplado de FastAPI.
 """
 
-from src.infrastructure.open_cv.draw_line_on_frame import FrameDrawer
 from src.shared.logger import get_logger
+
+from src.use_cases.get_filter_state_usecase import GetFilterStateUseCase
+from src.infrastructure.open_cv.draw_line_on_frame import FrameDrawer
 from src.domain.events import FilterStateChanged
+from src.use_cases.set_filter_state_usecase import SetFilterStateUseCase
+from src.infrastructure.repository.filter_state_repository import FilterStateRepository
+
 class StreamController:
     "Controlador para coordinar operaciones de stream y dibujo."
     logger = get_logger("StreamController")
@@ -19,29 +24,27 @@ class StreamController:
         return frame_modificado
 
     # Estado del filtro por conexión (WebSocket)
-    _filtro_por_ws = {}
-
     def set_filtro_activo(self, ws, activo: bool, event_bus=None, user_id=None):
-        "Setea el estado del filtro para una conexión WebSocket y emite evento de dominio si corresponde."
-        self.logger.info("set_filtro_activo: ws=%s, activo=%s", ws, activo)
-        self._filtro_por_ws[ws] = activo
+        "Setea el estado del filtro para una conexión WebSocket usando caso de uso puro."
+        user_id = user_id or getattr(ws, 'user_id', str(ws))
+        set_filter_state = SetFilterStateUseCase()
+        self.logger.info("set_filtro_activo: ws=%s, user_id=%s, activo=%s", ws, user_id, activo)
+        set_filter_state.execute(user_id, activo)
         # Emitir evento de dominio si se provee event_bus y user_id
         if event_bus and user_id is not None:
             event_bus.emit(FilterStateChanged(user_id, activo))
 
-    def get_filtro_activo(self, ws):
-        "Obtiene el estado del filtro para una conexión WebSocket. Por defecto, activo."
-        if ws is None:
-            return True
+    def get_filtro_activo(self, ws, user_id=None):
+        "Obtiene el estado del filtro para una conexión WebSocket usando caso de uso puro. Por defecto, activo."
+        user_id = user_id or getattr(ws, 'user_id', str(ws))
+        get_filter_state = GetFilterStateUseCase()
+        return get_filter_state.execute(user_id)
 
-        estado = self._filtro_por_ws.get(ws, True)
-        return estado
-
-    def remove_ws(self, ws):
-        "Elimina el estado asociado a una conexión WebSocket."
-        self.logger.info("remove_ws: ws=%s", ws)
-        if ws in self._filtro_por_ws:
-            del self._filtro_por_ws[ws]
+    def remove_ws(self, ws, user_id=None):
+        "Elimina el estado asociado a una conexión WebSocket en el repositorio."
+        user_id = user_id or getattr(ws, 'user_id', str(ws))
+        repo = FilterStateRepository()
+        repo.remove(user_id)
     def handle_websocket_message(self, user_id, message):
         "Delegar el procesamiento de mensajes WebSocket al adaptador."
         if self.websocket_adapter:

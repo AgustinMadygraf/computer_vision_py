@@ -19,6 +19,9 @@ class FrameDrawer(IFrameDrawer):
             return None
         height, width = frame.shape[:2]
         y = height // 2
-#        self.logger.debug("draw_horizontal_yellow_line: frame shape=%s, thickness=%d, y=%d", frame.shape, thickness, y)
-        cv2.line(frame, (0, y), (width, y), (0, 255, 255), thickness)  # Amarillo en BGR
+#        self.logger.debug("Procesando frame: shape=%s, thickness=%d, y=%d",
+#                          frame.shape, thickness, y)
+#        self.logger.debug("Aplicando línea amarilla al frame")
+        cv2.line(frame, (0, y), (width, y), (0, 255, 255), thickness)
+#        self.logger.debug("Frame procesado con línea amarilla")
         return frame
