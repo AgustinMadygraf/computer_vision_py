@@ -7,19 +7,17 @@ Clase para simular el stream de cámara usando una imagen fija en modo desarroll
 import cv2
 
 from src.entities.camera_stream import BaseCameraStream
-from src.entities.frame_drawer import IFrameDrawer
 from src.interface_adapters.controllers.stream_controller import StreamController
 from src.shared.logger import get_logger
 
 class ImageStream(BaseCameraStream):
-    logger = get_logger("ImageStream")
     "Clase para simular el stream de cámara usando una imagen fija en modo desarrollo."
-    def __init__(self, frame_drawer: IFrameDrawer, image_path=None):
-        super().__init__(frame_drawer)
+    logger = get_logger("ImageStream")
+    def __init__(self, image_path=None, frame_processor=None):
+        super().__init__(frame_processor)
         self.image_path = str(image_path) if image_path else None
-        self.stream_controller = StreamController()
-        # El callback ahora respeta el estado del filtro
-        self.process_frame_callback = lambda frame, ws=None: self.stream_controller.draw_line_on_frame(frame) if self.stream_controller.get_filtro_activo(ws) else frame
+        self.frame_processor = frame_processor
+        # ...existing code...
 
     def get_resolution(self):
         "Devuelve la resolución de la imagen cargada."

@@ -6,7 +6,14 @@ from typing import Optional
 
 class CameraConfig:
     """Entidad pura para la configuración de una cámara."""
-    def __init__(self, camera_type: str, index: Optional[int] = None, ip: Optional[str] = None, user: Optional[str] = None, password: Optional[str] = None):
+    def __init__(
+        self,
+        camera_type: str,
+        index: Optional[int] = None,
+        ip: Optional[str] = None,
+        user: Optional[str] = None,
+        password: Optional[str] = None
+    ):
         self.camera_type = camera_type  # 'usb', 'wifi', 'image'
         self.index = index
         self.ip = ip

@@ -9,29 +9,26 @@ from datetime import datetime
 import cv2
 
 from src.entities.camera_stream import BaseCameraStream
-from src.entities.frame_drawer import IFrameDrawer
 from src.interface_adapters.controllers.stream_controller import StreamController
 from src.shared.logger import get_logger
 class OpenCVCameraStreamUSB(BaseCameraStream):
     "Implementación de stream de cámara USB usando OpenCV."
     logger = get_logger("OpenCVCameraStreamUSB")
-    def __init__(self, _frame_drawer: IFrameDrawer, camera_index=0):
-        super().__init__(camera_index)
-        self.camera_index = camera_index
-        self.stream_controller = StreamController()
-        # El callback ahora respeta el estado del filtro
-        self.process_frame_callback = lambda frame, ws=None: self.stream_controller.draw_line_on_frame(frame) if self.stream_controller.get_filtro_activo(ws) else frame
+    def __init__(self, camera_index=0, frame_processor=None):
+        super().__init__(frame_processor)
+        self.camera_index = int(camera_index) if camera_index is not None else 0
+        self.frame_processor = frame_processor
+        self.cap = None
         try:
-            self.cap = cv2.VideoCapture(self.camera_index) # pylint: disable=catching-non-exception
-            if not self.cap.isOpened():
-                self.logger.error("No se pudo abrir la cámara USB en el índice %s", self.camera_index)
-                self.cap = None
+            self.cap = cv2.VideoCapture(self.camera_index)
+            if self.cap.isOpened():
+                self.width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                self.height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
             else:
-                self.width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)) # pylint: disable=catching-non-exception
-                self.height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) # pylint: disable=catching-non-exception
-        except (cv2.error, OSError) as e: # pylint: disable=catching-non-exception
-            self.logger.critical("Error al inicializar la cámara USB: %s", e)
-            self.cap = None
+                self.width = None
+                self.height = None
+        except (cv2.error, OSError) as e:  # pylint: disable=catching-non-exception
+            self.logger.error("Error inicializando cámara USB: %s", e)
 
     def get_resolution(self):
         "Obtiene la resolución del stream de video."

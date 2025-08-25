@@ -33,7 +33,7 @@ def get_stream_instance(stream_type: str, index: int):
     config = get_config()
     stream_controller = StreamController()
     if stream_type == "usb":
-        instance = OpenCVCameraStreamUSB(stream_controller.draw_line_on_frame, camera_index=index)
+        instance = OpenCVCameraStreamUSB(index, stream_controller.draw_line_on_frame)
     elif stream_type == "wifi":
         wifi_list = config.get("WIFI_CAMERAS", [])
         if index >= len(wifi_list):
@@ -47,7 +47,7 @@ def get_stream_instance(stream_type: str, index: int):
         )
     elif stream_type == "img":
         image_path = config.get("IMAGE_PATH")
-        instance = ImageStream(stream_controller.draw_line_on_frame, image_path=image_path)
+        instance = ImageStream(image_path=image_path, frame_processor=stream_controller.draw_line_on_frame)
     else:
         raise HTTPException(status_code=400, detail="Tipo de stream no soportado")
     streams[key] = instance

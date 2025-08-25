@@ -17,7 +17,7 @@ class SelectCameraStreamUseCase:
         "Devuelve la instancia de stream según la preferencia: USB > WiFi > Imagen."
         if self.cameras["usb"]:
             camera_index = self.cameras["usb"][0]
-            return OpenCVCameraStreamUSB(FrameDrawer(), camera_index)
+            return OpenCVCameraStreamUSB(camera_index, FrameDrawer())
         elif self.cameras["wifi"]:
             wifi = self.cameras["wifi"][0]
             return OpenCVCameraStreamWiFi(wifi["ip"], wifi["user"], wifi["password"], FrameDrawer())

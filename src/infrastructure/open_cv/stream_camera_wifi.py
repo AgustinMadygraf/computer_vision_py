@@ -8,18 +8,19 @@ from time import sleep
 from datetime import datetime
 import cv2
 from src.entities.camera_stream import BaseCameraStream
-from src.entities.frame_drawer import IFrameDrawer
 from src.interface_adapters.controllers.stream_controller import StreamController
 from src.shared.logger import get_logger
 
 class OpenCVCameraStreamWiFi(BaseCameraStream):
     "Stream de video RTSP sobre WiFi utilizando OpenCV."
     logger = get_logger("OpenCVCameraStreamWiFi")
-    def __init__(self, ip, user, password, frame_drawer: IFrameDrawer):
-        super().__init__(frame_drawer)
-        self.stream_controller = StreamController()
-        # El callback ahora respeta el estado del filtro
-        self.process_frame_callback = lambda frame, ws=None: self.stream_controller.draw_line_on_frame(frame) if self.stream_controller.get_filtro_activo(ws) else frame
+    def __init__(self, ip, user, password, process_frame_callback=None):
+        super().__init__(process_frame_callback)
+        self.ip = ip
+        self.user = user
+        self.password = password
+        self.frame_processor = process_frame_callback
+        # ...existing code...
         try:
             self.logger.info("Inicializando OpenCVCameraStreamWiFi con IP=%s, USER=%s", ip, user)
             os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp|stimeout;5001000"
