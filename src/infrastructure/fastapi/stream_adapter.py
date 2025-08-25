@@ -162,3 +162,37 @@ def stream_usb_filtro_endpoint(index: int):
         return adapter.stream_mjpeg()
     except HTTPException as e:
         return JSONResponse(status_code=e.status_code, content={"error": e.detail})
+
+@router.get("/wifi/{index}/stream_original.mjpg")
+def stream_wifi_original_endpoint(index: int):
+    "Streaming MJPEG original (sin filtro) para cámara WiFi en el índice dado"
+    config = get_config()
+    wifi_cameras = config.get("WIFI_CAMERAS", [])
+    if index not in wifi_cameras:
+        return JSONResponse(status_code=404,
+                            content={"error": f"No se encontró cámara WiFi en el índice {index}"})
+    try:
+        instance = get_stream_instance("wifi", index)
+        adapter = FastAPICameraHTTPAdapter(instance)
+        # Desactiva el filtro amarillo en el frame processor
+        instance.set_filter_enabled(False)
+        return adapter.stream_mjpeg()
+    except HTTPException as e:
+        return JSONResponse(status_code=e.status_code, content={"error": e.detail})
+
+@router.get("/wifi/{index}/stream_filtro.mjpg")
+def stream_wifi_filtro_endpoint(index: int):
+    "Streaming MJPEG con filtro amarillo para cámara WiFi en el índice dado"
+    config = get_config()
+    wifi_cameras = config.get("WIFI_CAMERAS", [])
+    if index not in wifi_cameras:
+        return JSONResponse(status_code=404,
+                            content={"error": f"No se encontró cámara WiFi en el índice {index}"})
+    try:
+        instance = get_stream_instance("wifi", index)
+        adapter = FastAPICameraHTTPAdapter(instance)
+        # Activa el filtro amarillo en el frame processor
+        instance.set_filter_enabled(True)
+        return adapter.stream_mjpeg()
+    except HTTPException as e:
+        return JSONResponse(status_code=e.status_code, content={"error": e.detail})
