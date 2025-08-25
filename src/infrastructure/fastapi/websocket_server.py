@@ -44,7 +44,10 @@ async def websocket_endpoint(websocket: WebSocket):
     # Estado del filtro por conexión coordinado con el controlador
     stream_controller = StreamController()
     try:
-        await websocket.send_json({"message": "Conectado al WebSocket"})
+        await websocket.send_json({
+            "message": "Conectado al WebSocket",
+            "user_id": str(websocket.user_id)
+        })
         while True:
             data = await websocket.receive_text()
             if data.strip().lower() == "close":
