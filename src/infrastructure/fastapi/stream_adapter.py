@@ -3,7 +3,7 @@
 Path: infrastructure/fastapi/streamer_adapter.py
 """
 
-from fastapi import APIRouter, WebSocket, HTTPException
+from fastapi import APIRouter, WebSocket, HTTPException, Query
 from fastapi.responses import StreamingResponse, JSONResponse, FileResponse
 
 from src.infrastructure.fastapi.websocket_server import websocket_endpoint
@@ -145,15 +145,19 @@ def available_streams():
     return JSONResponse(content=result)
 
 @router.get("/usb/{index}/stream.mjpg")
-def stream_usb_endpoint(index: int):
+def stream_usb_endpoint(index: int, user_id: str = Query(None)):
     "Streaming MJPEG para cámara USB en el índice dado"
     config = get_config()
     usb_cameras = config.get("USB_CAMERAS", [])
     if index not in usb_cameras:
         return JSONResponse(status_code=404,
                             content={"error": f"No se encontró cámara USB en el índice {index}"})
-    # Obtener el identificador de WebSocket si está disponible (ejemplo: por query param o contexto)
-    ws = None  # Aquí deberías obtener el ws real si lo tienes
+    class DummyWS:
+        "Clase dummy para simular el WebSocket"
+        def __init__(self, user_id):
+            self.user_id = user_id
+
+    ws = DummyWS(user_id if user_id is not None else str(index))
     try:
         instance = get_stream_instance("usb", index)
         _adapter = FastAPICameraHTTPAdapter(instance)

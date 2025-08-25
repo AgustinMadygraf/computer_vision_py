@@ -31,8 +31,16 @@ notifier.register_listener(emit_event)
 async def websocket_endpoint(websocket: WebSocket):
     "Maneja la conexión WebSocket."
     await websocket.accept()
+    # Asignar un identificador único y persistente al WebSocket
+    # Puede provenir de un token, parámetro, o generarse automáticamente
+    if not hasattr(websocket, 'user_id'):
+        # Ejemplo: usar la dirección remota como identificador (ajustar según seguridad)
+        websocket.user_id = getattr(websocket, 'client', None)
+        if websocket.user_id is None:
+            # Fallback: usar id de objeto
+            websocket.user_id = str(id(websocket))
     connected_websockets.add(websocket)
-    logger.info("Cliente WebSocket conectado. Total: %d", len(connected_websockets))
+    logger.info("Cliente WebSocket conectado. user_id=%s. Total: %d", websocket.user_id, len(connected_websockets))
     # Estado del filtro por conexión coordinado con el controlador
     stream_controller = StreamController()
     try:
@@ -45,9 +53,11 @@ async def websocket_endpoint(websocket: WebSocket):
                 break
             # Mensaje para alternar filtro
             if data.strip().lower() == "filtro:on":
+                logger.debug("WebSocket user_id=%s: comando recibido 'filtro:on'", websocket.user_id)
                 stream_controller.set_filtro_activo(websocket, True)
                 await websocket.send_json({"message": "Filtro activado"})
             elif data.strip().lower() == "filtro:off":
+                logger.debug("WebSocket user_id=%s: comando recibido 'filtro:off'", websocket.user_id)
                 stream_controller.set_filtro_activo(websocket, False)
                 await websocket.send_json({"message": "Filtro desactivado"})
             # El controlador mantiene el estado por conexión

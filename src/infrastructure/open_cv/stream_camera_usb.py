@@ -66,18 +66,18 @@ class OpenCVCameraStreamUSB(BaseCameraStream):
                 continue
             user_id = getattr(ws, 'user_id', str(ws))
             filtro_activo = get_filter_state.execute(user_id)
-#            self.logger.debug("Procesando frame: ws=%s, user_id=%s, filtro_activo=%s", ws, user_id, filtro_activo)
+#            self.logger.debug("Procesando frame: ws=%s, user_id=%s, filtro_activo=%s", ws, user_id, filtro_activo) # debug comentado porque es muy verboso
             if filtro_activo:
-#                self.logger.debug("Aplicando línea amarilla al frame")
+#                self.logger.debug("Aplicando línea amarilla al frame") # debug comentado porque es muy verboso
                 frame = self.process_frame_callback(frame)
                 _frame_tipo = "con línea"
             else:
-#                self.logger.debug("Enviando frame original sin línea amarilla")
+#                self.logger.debug("Enviando frame original sin línea amarilla") # debug comentado porque es muy verboso
                 _frame_tipo = "sin línea"
             ret, jpeg = cv2.imencode('.jpg', frame, encode_params)
             if not ret:
                 continue
-#            self.logger.debug("Frame enviado al frontend: ws=%s, user_id=%s, tipo=%s", ws, user_id, frame_tipo)
+#            self.logger.debug("Frame enviado al frontend: ws=%s, user_id=%s, tipo=%s", ws, user_id, frame_tipo) # debug comentado porque es muy verboso
             boundary = b"--frame"
             header = b"Content-Type: image/jpeg\r\n\r\n"
             yield boundary + b"\r\n" + header + jpeg.tobytes() + b"\r\n"
