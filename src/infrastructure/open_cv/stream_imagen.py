@@ -5,8 +5,10 @@ Clase para simular el stream de cámara usando una imagen fija en modo desarroll
 """
 
 import cv2
+
 from src.entities.camera_stream import BaseCameraStream
 from src.entities.frame_drawer import IFrameDrawer
+from src.interface_adapters.controllers.stream_controller import StreamController
 
 class ImageStream(BaseCameraStream):
     "Clase para simular el stream de cámara usando una imagen fija en modo desarrollo."
@@ -31,20 +33,24 @@ class ImageStream(BaseCameraStream):
             print(f"[ERROR] get_resolution (cv2): {e}")
             return None, None
 
-    def mjpeg_generator(self, quality=80):
+    def mjpeg_generator(self, quality=80, ws=None):
         "Generador MJPEG simulado para la imagen fija en formato MJPEG estándar."
+        stream_controller = StreamController()
         try:
             image = cv2.imread(self.image_path)
             if image is None:
                 raise FileNotFoundError(f"No se pudo cargar la imagen: {self.image_path}")
-            # Aplica el callback para dibujar la línea
-            image = self.process_frame_callback(image)
+            filtro_activo = stream_controller.get_filtro_activo(ws) if ws else False
+            if filtro_activo:
+                image = self.process_frame_callback(image)
             encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), quality]
             ret, jpeg = cv2.imencode('.jpg', image, encode_param)
             if not ret:
                 raise RuntimeError("No se pudo codificar la imagen como JPEG")
             _frame = jpeg.tobytes()
             boundary = b"--frame"
+            header = b"Content-Type: image/jpeg\r\n\r\n"
+            yield boundary + b"\r\n" + header + _frame + b"\r\n"
         except FileNotFoundError as e:
             print(f"[ERROR] mjpeg_generator: {e}")
             boundary = b"--frame"

@@ -150,10 +150,16 @@ def stream_usb_endpoint(index: int):
     config = get_config()
     usb_cameras = config.get("USB_CAMERAS", [])
     if index not in usb_cameras:
-        return JSONResponse(status_code=404, content={"error": f"No se encontró cámara USB en el índice {index}"})
+        return JSONResponse(status_code=404,
+                            content={"error": f"No se encontró cámara USB en el índice {index}"})
+    # Obtener el identificador de WebSocket si está disponible (ejemplo: por query param o contexto)
+    ws = None  # Aquí deberías obtener el ws real si lo tienes
     try:
         instance = get_stream_instance("usb", index)
-        adapter = FastAPICameraHTTPAdapter(instance)
-        return adapter.stream_mjpeg()
+        _adapter = FastAPICameraHTTPAdapter(instance)
+        return StreamingResponse(
+            instance.mjpeg_generator(quality=80, ws=ws),
+            media_type="multipart/x-mixed-replace; boundary=frame"
+        )
     except HTTPException as e:
         return JSONResponse(status_code=e.status_code, content={"error": e.detail})

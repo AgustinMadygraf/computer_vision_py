@@ -8,6 +8,7 @@ from fastapi import WebSocket
 from starlette.websockets import WebSocketDisconnect
 
 from src.application.stream_event_notifier import StreamEventNotifier
+from src.interface_adapters.controllers.stream_controller import StreamController
 
 connected_websockets = set()
 notifier = StreamEventNotifier()
@@ -32,6 +33,8 @@ async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     connected_websockets.add(websocket)
     print(f"[INFO] Cliente WebSocket conectado. Total: {len(connected_websockets)}")
+    # Estado del filtro por conexión coordinado con el controlador
+    stream_controller = StreamController()
     try:
         await websocket.send_json({"message": "Conectado al WebSocket"})
         while True:
@@ -40,10 +43,19 @@ async def websocket_endpoint(websocket: WebSocket):
                 await websocket.send_json({"message": "Cerrando conexión WebSocket"})
                 await websocket.close()
                 break
+            # Mensaje para alternar filtro
+            if data.strip().lower() == "filtro:on":
+                stream_controller.set_filtro_activo(websocket, True)
+                await websocket.send_json({"message": "Filtro activado"})
+            elif data.strip().lower() == "filtro:off":
+                stream_controller.set_filtro_activo(websocket, False)
+                await websocket.send_json({"message": "Filtro desactivado"})
+            # El controlador mantiene el estado por conexión
     except (WebSocketDisconnect, RuntimeError):
         print("[INFO] WebSocket desconectado por el cliente.")
     except asyncio.CancelledError as e:
         print(f"[INFO] WebSocket task cancelada: {e}")
     finally:
+        stream_controller.remove_ws(websocket)
         connected_websockets.discard(websocket)
         print(f"[INFO] Cliente WebSocket eliminado. Total: {len(connected_websockets)}")

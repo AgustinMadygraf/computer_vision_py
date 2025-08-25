@@ -10,11 +10,12 @@ import cv2
 
 from src.entities.camera_stream import BaseCameraStream
 from src.entities.frame_drawer import IFrameDrawer
-
+from src.interface_adapters.controllers.stream_controller import StreamController
 class OpenCVCameraStreamUSB(BaseCameraStream):
-    "Stream de video USB utilizando OpenCV."
-    def __init__(self, frame_drawer: IFrameDrawer, camera_index=0):
-        super().__init__(frame_drawer)
+    "Implementación de stream de cámara USB usando OpenCV."
+    def __init__(self, _frame_drawer: IFrameDrawer, camera_index=0):
+        super().__init__(camera_index)
+        self.process_frame_callback = StreamController().draw_line_on_frame
         self.camera_index = camera_index
         try:
             self.cap = cv2.VideoCapture(self.camera_index) # pylint: disable=catching-non-exception
@@ -54,15 +55,23 @@ class OpenCVCameraStreamUSB(BaseCameraStream):
         except (cv2.error, OSError) as e: # pylint: disable=catching-non-exception
             print(f"[ERROR] Reconexion USB: {e}")
 
-    def mjpeg_generator(self, quality=80):
-        "Generador de stream MJPEG."
-        encode_params = [int(cv2.IMWRITE_JPEG_QUALITY), quality] # pylint: disable=catching-non-exception
+    def mjpeg_generator(self, quality=80, ws=None):
+        "Generador de stream MJPEG con control de filtro por WebSocket."
+        encode_params = [int(cv2.IMWRITE_JPEG_QUALITY), quality]
+        stream_controller = StreamController()
         while True:
             frame = self.read_frame()
             if frame is None:
                 continue
-            frame = self.process_frame_callback(frame)
-            ret, jpeg = cv2.imencode('.jpg', frame, encode_params) # pylint: disable=catching-non-exception
+            filtro_activo = stream_controller.get_filtro_activo(ws)
+            # print(f"[DEBUG] mjpeg_generator: ws={ws}, filtro_activo={filtro_activo}")
+            if filtro_activo:
+                # print("[DEBUG] mjpeg_generator: aplicando filtro")
+                frame = self.process_frame_callback(frame)
+            else:
+                # print("[DEBUG] mjpeg_generator: NO se aplica filtro")
+                pass
+            ret, jpeg = cv2.imencode('.jpg', frame, encode_params)
             if not ret:
                 continue
             boundary = b"--frame"

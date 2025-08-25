@@ -9,6 +9,7 @@ from datetime import datetime
 import cv2
 from src.entities.camera_stream import BaseCameraStream
 from src.entities.frame_drawer import IFrameDrawer
+from src.interface_adapters.controllers.stream_controller import StreamController
 
 class OpenCVCameraStreamWiFi(BaseCameraStream):
     "Stream de video RTSP sobre WiFi utilizando OpenCV."
@@ -113,9 +114,10 @@ class OpenCVCameraStreamWiFi(BaseCameraStream):
         except OSError as e:
             print(f"[CRITICAL] Error crítico al reconectar el stream de cámara: {e}")
 
-    def mjpeg_generator(self, quality=80):
-        "Generador de stream MJPEG."
+    def mjpeg_generator(self, quality=80, ws=None):
+        "Generador de stream MJPEG con control de filtro por WebSocket."
         encode_params = [int(cv2.IMWRITE_JPEG_QUALITY), quality]
+        stream_controller = StreamController()
         while True:
             try:
                 frame = self.read_frame()
@@ -123,7 +125,9 @@ class OpenCVCameraStreamWiFi(BaseCameraStream):
                     print("[WARN] mjpeg_generator: frame es None.")
                     sleep(0.05)
                     continue
-                frame = self.process_frame_callback(frame)
+                filtro_activo = stream_controller.get_filtro_activo(ws) if ws else False
+                if filtro_activo:
+                    frame = self.process_frame_callback(frame)
                 frame = cv2.flip(frame, 0)  # Voltea la imagen verticalmente
                 ok, jpg = cv2.imencode(".jpg", frame, encode_params)
                 if not ok:
