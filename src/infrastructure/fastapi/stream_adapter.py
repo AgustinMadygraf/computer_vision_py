@@ -1,30 +1,17 @@
-
 """
 Path: infrastructure/fastapi/streamer_adapter.py
 """
 
-from fastapi import APIRouter, WebSocket, HTTPException, Query
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse, JSONResponse, FileResponse
 
-from src.infrastructure.fastapi.websocket_server import websocket_endpoint
 from src.infrastructure.open_cv.stream_camera_usb import OpenCVCameraStreamUSB
 from src.infrastructure.open_cv.stream_camera_wifi import OpenCVCameraStreamWiFi
 from src.infrastructure.open_cv.stream_imagen import ImageStream
 from src.shared.config import get_config
-from src.use_cases.discover_cameras_usecase import DiscoverCamerasUseCase
 from src.interface_adapters.controllers.stream_controller import StreamController
 
 router = APIRouter(tags=["stream"])
-
-@router.get("/cameras/refresh", tags=["stream"])
-def refresh_cameras():
-    "Endpoint para recargar y devolver la lista actual de cámaras USB y WiFi."
-    usb_gateway = OpenCVCameraStreamUSB()
-    wifi_gateway = OpenCVCameraStreamWiFi(ip="", user="", password="")
-    usecase = DiscoverCamerasUseCase(usb_gateway=usb_gateway, wifi_gateway=wifi_gateway)
-    cameras = usecase.execute()
-    return {"cameras": cameras}
-
 streams = {}
 
 def get_stream_instance(stream_type: str, index: int):
@@ -85,10 +72,6 @@ def snapshot_img_endpoint(index: int):
     except HTTPException as e:
         return JSONResponse(status_code=e.status_code, content={"error": e.detail})
 
-@router.websocket("/ws")
-async def ws_endpoint(websocket: WebSocket):
-    "WebSocket para eventos o streaming en tiempo real"
-    await websocket_endpoint(websocket)
 class FastAPICameraHTTPAdapter:
     "Adaptador HTTP para exponer los casos de uso de la cámara IP con FastAPI."
     def __init__(self, camera_usecase):
@@ -146,26 +129,36 @@ def available_streams():
         })
     return JSONResponse(content=result)
 
-@router.get("/usb/{index}/stream.mjpg")
-def stream_usb_endpoint(index: int, user_id: str = Query(None)):
-    "Streaming MJPEG para cámara USB en el índice dado"
+@router.get("/usb/{index}/stream_original.mjpg")
+def stream_usb_original_endpoint(index: int):
+    "Streaming MJPEG original (sin filtro) para cámara USB en el índice dado"
     config = get_config()
     usb_cameras = config.get("USB_CAMERAS", [])
     if index not in usb_cameras:
         return JSONResponse(status_code=404,
                             content={"error": f"No se encontró cámara USB en el índice {index}"})
-    class DummyWS:
-        "Clase dummy para simular el WebSocket"
-        def __init__(self, user_id):
-            self.user_id = user_id
-
-    ws = DummyWS(user_id if user_id is not None else str(index))
     try:
         instance = get_stream_instance("usb", index)
-        _adapter = FastAPICameraHTTPAdapter(instance)
-        return StreamingResponse(
-            instance.mjpeg_generator(quality=80, ws=ws),
-            media_type="multipart/x-mixed-replace; boundary=frame"
-        )
+        adapter = FastAPICameraHTTPAdapter(instance)
+        # Desactiva el filtro amarillo en el frame processor
+        instance.set_filter_enabled(False)
+        return adapter.stream_mjpeg()
+    except HTTPException as e:
+        return JSONResponse(status_code=e.status_code, content={"error": e.detail})
+
+@router.get("/usb/{index}/stream_filtro.mjpg")
+def stream_usb_filtro_endpoint(index: int):
+    "Streaming MJPEG con filtro amarillo para cámara USB en el índice dado"
+    config = get_config()
+    usb_cameras = config.get("USB_CAMERAS", [])
+    if index not in usb_cameras:
+        return JSONResponse(status_code=404,
+                            content={"error": f"No se encontró cámara USB en el índice {index}"})
+    try:
+        instance = get_stream_instance("usb", index)
+        adapter = FastAPICameraHTTPAdapter(instance)
+        # Activa el filtro amarillo en el frame processor
+        instance.set_filter_enabled(True)
+        return adapter.stream_mjpeg()
     except HTTPException as e:
         return JSONResponse(status_code=e.status_code, content={"error": e.detail})

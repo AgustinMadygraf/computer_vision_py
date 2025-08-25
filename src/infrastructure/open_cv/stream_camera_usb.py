@@ -19,6 +19,7 @@ class OpenCVCameraStreamUSB(BaseCameraStream):
         self.camera_index = int(camera_index) if camera_index is not None else 0
         self.frame_processor = frame_processor
         self.cap = None
+        self.filter_enabled = False  # Nuevo atributo
         try:
             self.cap = cv2.VideoCapture(self.camera_index)
             if self.cap.isOpened():
@@ -56,29 +57,25 @@ class OpenCVCameraStreamUSB(BaseCameraStream):
         except (cv2.error, OSError) as e: # pylint: disable=catching-non-exception
             self.logger.error("Reconexion USB: %s", e)
 
+    def set_filter_enabled(self, enabled: bool):
+        "Habilita o deshabilita el filtro."
+        self.filter_enabled = enabled
+
     def mjpeg_generator(self, quality=80, ws=None):
-        "Generador de stream MJPEG con control de filtro por WebSocket."
+        "Generador de stream MJPEG con control de filtro por atributo interno."
         encode_params = [int(cv2.IMWRITE_JPEG_QUALITY), quality]
-        get_filter_state = GetFilterStateUseCase()
         while True:
             frame = self.read_frame()
             if frame is None:
                 continue
-            user_id = getattr(ws, 'user_id', str(ws))
-            filtro_activo = get_filter_state.execute(user_id)
-#            self.logger.debug("Procesando frame: ws=%s, user_id=%s, filtro_activo=%s", ws, user_id, filtro_activo) # debug comentado porque es muy verboso
-            if filtro_activo:
-#                self.logger.debug("Aplicando línea amarilla al frame") # debug comentado porque es muy verboso
+            if self.filter_enabled:
                 frame = self.process_frame_callback(frame)
                 _frame_tipo = "con línea"
             else:
-#                self.logger.debug("Enviando frame original sin línea amarilla") # debug comentado porque es muy verboso
                 _frame_tipo = "sin línea"
             ret, jpeg = cv2.imencode('.jpg', frame, encode_params)
             if not ret:
                 continue
-#            self.logger.debug("Frame enviado al frontend: ws=%s, # debug comentado porque es muy verboso
-#                                   user_id=%s, tipo=%s", ws, user_id, frame_tipo) # debug comentado porque es muy verboso
             boundary = b"--frame"
             header = b"Content-Type: image/jpeg\r\n\r\n"
             yield boundary + b"\r\n" + header + jpeg.tobytes() + b"\r\n"
