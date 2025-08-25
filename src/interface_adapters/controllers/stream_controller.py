@@ -29,6 +29,7 @@ class StreamController:
         user_id = user_id or getattr(ws, 'user_id', str(ws))
         set_filter_state = SetFilterStateUseCase()
         self.logger.info("set_filtro_activo: ws=%s, user_id=%s, activo=%s", ws, user_id, activo)
+        self.logger.debug("Cambio de filtro detectado por WebSocket: ws=%s, user_id=%s, nuevo_estado=%s", ws, user_id, activo)
         set_filter_state.execute(user_id, activo)
         # Emitir evento de dominio si se provee event_bus y user_id
         if event_bus and user_id is not None:

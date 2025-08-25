@@ -21,8 +21,6 @@ class FilterStateRepository(IFilterRepository):
         self._filter_settings_by_user[user_id] = filter_settings
 
     def remove(self, user_id):
-        """
-        Elimina el estado del filtro para el usuario dado.
-        """
+        "Elimina el estado del filtro para el usuario dado."
         if user_id in self._filter_settings_by_user:
             del self._filter_settings_by_user[user_id]
