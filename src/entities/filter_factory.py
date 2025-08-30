@@ -6,13 +6,21 @@ from src.entities.contour_filter import ContourFilter
 from src.entities.yellow_line_filter import YellowLineFilter
 
 class FilterFactory:
-    "Fábrica de filtros."
-    @staticmethod
-    def get_filter(filter_type: str):
-        "Obtiene un filtro según el tipo especificado."
-        if filter_type == 'contour':
-            return ContourFilter()
-        elif filter_type == 'yellow_line':
-            return YellowLineFilter()
-        else:
+    "Fábrica y registro dinámico de filtros."
+    _registry = {
+        'contour': ContourFilter,
+        'yellow_line': YellowLineFilter,
+    }
+
+    @classmethod
+    def register_filter(cls, filter_type: str, filter_cls):
+        """Registra un nuevo filtro en el registro."""
+        cls._registry[filter_type] = filter_cls
+
+    @classmethod
+    def get_filter(cls, filter_type: str):
+        """Obtiene una instancia de filtro según el tipo especificado."""
+        filter_cls = cls._registry.get(filter_type)
+        if not filter_cls:
             raise ValueError(f"Filtro desconocido: {filter_type}")
+        return filter_cls()
