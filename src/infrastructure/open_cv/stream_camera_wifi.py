@@ -12,16 +12,18 @@ from src.shared.logger import get_logger
 
 from src.entities.camera_stream import BaseCameraStream
 from src.infrastructure.open_cv.color_quantization import cuantizar_color_bgr
+from src.entities.filter_factory import FilterFactory
 
 class OpenCVCameraStreamWiFi(BaseCameraStream):
     "Stream de video RTSP sobre WiFi utilizando OpenCV."
     logger = get_logger("OpenCVCameraStreamWiFi")
-    def __init__(self, ip, user, password, process_frame_callback=None):
-        super().__init__(process_frame_callback)
+    def __init__(self, ip, user, password, filter_type=None):
+        frame_processor = FilterFactory.get_filter(filter_type) if filter_type else None
+        super().__init__(frame_processor)
         self.ip = ip
         self.user = user
         self.password = password
-        self.frame_processor = process_frame_callback
+        self.frame_processor = frame_processor
         try:
             self.logger.info("Inicializando OpenCVCameraStreamWiFi con IP=%s, USER=%s", ip, user)
             os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp|stimeout;5001000"
@@ -128,8 +130,8 @@ class OpenCVCameraStreamWiFi(BaseCameraStream):
                     self.logger.warning("mjpeg_generator: frame es None.")
                     sleep(0.05)
                     continue
-                if self.filter_enabled:
-                    frame = self.process_frame_callback(frame)
+                if self.filter_enabled and self.frame_processor:
+                    frame = self.frame_processor.process(frame)
                     # Aplica cuantización de color
                     frame = cuantizar_color_bgr(frame, levels_per_channel=6, mode='posterize')
                 frame = cv2.flip(frame, 0)  # Voltea la imagen verticalmente
@@ -155,7 +157,8 @@ class OpenCVCameraStreamWiFi(BaseCameraStream):
             if frame is None:
                 self.logger.error("No se pudo capturar snapshot WiFi.")
                 return None
-            frame = self.process_frame_callback(frame)
+            if self.frame_processor:
+                frame = self.frame_processor.process(frame)
             frame = cv2.flip(frame, 0)  # Voltea la imagen verticalmente
             if path is None:
                 snapshots_dir = os.path.join("static", "snapshots")

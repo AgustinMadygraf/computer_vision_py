@@ -10,11 +10,13 @@ from src.shared.logger import get_logger
 
 from src.entities.camera_stream import BaseCameraStream
 from src.infrastructure.open_cv.color_quantization import cuantizar_color_bgr
+from src.entities.filter_factory import FilterFactory
 
 class ImageStream(BaseCameraStream):
     "Clase para simular el stream de cámara usando una imagen fija en modo desarrollo."
     logger = get_logger("ImageStream")
-    def __init__(self, image_path=None, frame_processor=None):
+    def __init__(self, image_path=None, filter_type=None):
+        frame_processor = FilterFactory.get_filter(filter_type) if filter_type else None
         super().__init__(frame_processor)
         self.image_path = str(image_path) if image_path else None
         self.frame_processor = frame_processor
@@ -42,9 +44,9 @@ class ImageStream(BaseCameraStream):
             image = cv2.imread(self.image_path)
             if image is None:
                 raise FileNotFoundError(f"No se pudo cargar la imagen: {self.image_path}")
-            # Aplica el callback de procesamiento de frame si está definido
-            if self.process_frame_callback:
-                image = self.process_frame_callback(image)
+            # Aplica el procesamiento de frame usando el filtro del dominio si está definido
+            if self.frame_processor:
+                image = self.frame_processor.process(image)
             # Aplica cuantización de color
             image = cuantizar_color_bgr(image, levels_per_channel=8, mode='posterize')
             encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), quality]
@@ -83,8 +85,9 @@ class ImageStream(BaseCameraStream):
             image = cv2.imread(self.image_path)
             if image is None:
                 raise FileNotFoundError(f"No se pudo cargar la imagen: {self.image_path}")
-            # Aplica el callback para dibujar la línea
-            image = self.process_frame_callback(image)
+            # Aplica el procesamiento de frame usando el filtro del dominio si está definido
+            if self.frame_processor:
+                image = self.frame_processor.process(image)
             save_path = path or "snapshot.jpg"
             cv2.imwrite(save_path, image)
             return save_path
