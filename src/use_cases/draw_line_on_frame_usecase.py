@@ -7,7 +7,7 @@ import numpy as np
 from src.entities.frame_drawer import IFrameDrawer
 
 class DrawLineOnFrameUseCase:
-    """Caso de uso para dibujar una línea horizontal amarilla en la mitad de la imagen."""
+    """Caso de uso para dibujar una línea horizontal violeta en la mitad de la imagen."""
     def __init__(self, frame_drawer: IFrameDrawer):
         self.frame_drawer = frame_drawer
 

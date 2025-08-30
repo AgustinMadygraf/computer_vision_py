@@ -1,6 +1,6 @@
 """
 Path: src/entities/filter_settings.py
-Entidad FilterSettings: representa la configuración y estado del filtro de línea amarilla.
+Entidad FilterSettings: representa la configuración y estado del filtro de línea violeta.
 """
 class FilterSettings:
     """Entidad pura para el estado/configuración del filtro."""

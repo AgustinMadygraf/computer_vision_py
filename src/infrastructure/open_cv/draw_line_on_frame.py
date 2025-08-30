@@ -21,7 +21,7 @@ class FrameDrawer(IFrameDrawer):
         y = height // 2
 #        self.logger.debug("Procesando frame: shape=%s, thickness=%d, y=%d",
 #                          frame.shape, thickness, y)
-#        self.logger.debug("Aplicando línea amarilla al frame")
-        cv2.line(frame, (0, y), (width, y), (0, 255, 255), thickness)
-#        self.logger.debug("Frame procesado con línea amarilla")
+#        self.logger.debug("Aplicando línea violeta al frame")
+        cv2.line(frame, (0, y), (width, y), (255, 0, 255), thickness)
+    #        self.logger.debug("Frame procesado con línea violeta")
         return frame

@@ -12,5 +12,5 @@ class IFrameDrawer(ABC):
 
     @abstractmethod
     def draw_horizontal_yellow_line(self, frame: Any, thickness: int = 3) -> Any:
-        """Dibuja una línea horizontal amarilla en la mitad de la imagen."""
+        """Dibuja una línea horizontal violeta en la mitad de la imagen."""
         pass
