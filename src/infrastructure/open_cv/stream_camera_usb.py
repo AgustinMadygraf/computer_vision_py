@@ -20,8 +20,9 @@ class OpenCVCameraStreamUSB(BaseCameraStream):
         super().__init__(frame_processor)
         self.camera_index = int(camera_index) if camera_index is not None else 0
         self.frame_processor = frame_processor
+        self.process_frame_callback = frame_processor
         self.cap = None
-        self.filter_enabled = False  # Nuevo atributo
+        self.filter_enabled = False
         try:
             self.cap = cv2.VideoCapture(self.camera_index)
             if self.cap.isOpened():

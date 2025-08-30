@@ -11,6 +11,7 @@ from src.infrastructure.fastapi.static_server import app as fastapi_app
 from src.infrastructure.fastapi import stream_adapter
 from src.entities.camera_stream import CameraStreamInterface
 from src.infrastructure.fastapi.stream_adapter import FastAPICameraHTTPAdapter
+from src.entities.filter_factory import FilterFactory
 
 logger = get_logger("CompositionRoot")
 
@@ -24,10 +25,9 @@ def create_camera_stream() -> CameraStreamInterface:
     logger.info("Cámaras detectadas: %s", cameras)
     image_path = get_env("IMAGE_PATH")
     logger.info("IMAGE_PATH: %s", image_path)
-    # Instanciar FrameDrawer y pasarlo a los streams
-    frame_drawer = __import__('src.infrastructure.open_cv.draw_line_on_frame', fromlist=['FrameDrawer']).FrameDrawer()
-    # Instanciar SelectCameraStreamUseCase con dependencias explícitas
-    select_stream_usecase = SelectCameraStreamUseCase(cameras, image_path, frame_drawer)
+    # Instanciar ContourFilter y pasarlo como frame processor
+    frame_processor = FilterFactory.get_filter('contour')
+    select_stream_usecase = SelectCameraStreamUseCase(cameras, image_path, frame_processor)
     return select_stream_usecase.execute()
 
 def get_app():
