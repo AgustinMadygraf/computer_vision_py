@@ -8,9 +8,11 @@ import os
 from datetime import datetime
 import cv2
 
-from src.use_cases.get_filter_state_usecase import GetFilterStateUseCase
-from src.entities.camera_stream import BaseCameraStream
 from src.shared.logger import get_logger
+
+from src.entities.camera_stream import BaseCameraStream
+from src.infrastructure.open_cv.color_quantization import cuantizar_color_bgr
+
 class OpenCVCameraStreamUSB(BaseCameraStream):
     "Implementación de stream de cámara USB usando OpenCV."
     logger = get_logger("OpenCVCameraStreamUSB")
@@ -61,8 +63,8 @@ class OpenCVCameraStreamUSB(BaseCameraStream):
         "Habilita o deshabilita el filtro."
         self.filter_enabled = enabled
 
-    def mjpeg_generator(self, quality=80, ws=None):
-        "Generador de stream MJPEG con control de filtro por atributo interno."
+    def mjpeg_generator(self, quality=80):
+        "Generador de stream MJPEG con control de filtro y cuantización de color."
         encode_params = [int(cv2.IMWRITE_JPEG_QUALITY), quality]
         while True:
             frame = self.read_frame()
@@ -70,7 +72,9 @@ class OpenCVCameraStreamUSB(BaseCameraStream):
                 continue
             if self.filter_enabled:
                 frame = self.process_frame_callback(frame)
-                _frame_tipo = "con línea"
+                # Aplica cuantización de color
+                frame = cuantizar_color_bgr(frame, levels_per_channel=8, mode='posterize')
+                _frame_tipo = "con línea y cuantización"
             else:
                 _frame_tipo = "sin línea"
             ret, jpeg = cv2.imencode('.jpg', frame, encode_params)

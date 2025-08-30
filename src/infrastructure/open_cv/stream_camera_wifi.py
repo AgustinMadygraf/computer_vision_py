@@ -7,9 +7,11 @@ import os
 from time import sleep
 from datetime import datetime
 import cv2
-from src.entities.camera_stream import BaseCameraStream
-from src.interface_adapters.controllers.stream_controller import StreamController
+
 from src.shared.logger import get_logger
+
+from src.entities.camera_stream import BaseCameraStream
+from src.infrastructure.open_cv.color_quantization import cuantizar_color_bgr
 
 class OpenCVCameraStreamWiFi(BaseCameraStream):
     "Stream de video RTSP sobre WiFi utilizando OpenCV."
@@ -20,7 +22,6 @@ class OpenCVCameraStreamWiFi(BaseCameraStream):
         self.user = user
         self.password = password
         self.frame_processor = process_frame_callback
-        # ...existing code...
         try:
             self.logger.info("Inicializando OpenCVCameraStreamWiFi con IP=%s, USER=%s", ip, user)
             os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp|stimeout;5001000"
@@ -117,10 +118,9 @@ class OpenCVCameraStreamWiFi(BaseCameraStream):
         except OSError as e:
             self.logger.critical("Error crítico al reconectar el stream de cámara: %s", e)
 
-    def mjpeg_generator(self, quality=80, ws=None):
-        "Generador de stream MJPEG con control de filtro por WebSocket."
+    def mjpeg_generator(self, quality=80):
+        "Generador de stream MJPEG con control de filtro y cuantización de color."
         encode_params = [int(cv2.IMWRITE_JPEG_QUALITY), quality]
-        stream_controller = StreamController()
         while True:
             try:
                 frame = self.read_frame()
@@ -128,9 +128,10 @@ class OpenCVCameraStreamWiFi(BaseCameraStream):
                     self.logger.warning("mjpeg_generator: frame es None.")
                     sleep(0.05)
                     continue
-                filtro_activo = stream_controller.get_filtro_activo(ws) if ws else False
-                if filtro_activo:
+                if self.filter_enabled:
                     frame = self.process_frame_callback(frame)
+                    # Aplica cuantización de color
+                    frame = cuantizar_color_bgr(frame, levels_per_channel=8, mode='posterize')
                 frame = cv2.flip(frame, 0)  # Voltea la imagen verticalmente
                 ok, jpg = cv2.imencode(".jpg", frame, encode_params)
                 if not ok:

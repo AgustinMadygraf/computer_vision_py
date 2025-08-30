@@ -6,9 +6,10 @@ Clase para simular el stream de cámara usando una imagen fija en modo desarroll
 
 import cv2
 
-from src.entities.camera_stream import BaseCameraStream
-from src.interface_adapters.controllers.stream_controller import StreamController
 from src.shared.logger import get_logger
+
+from src.entities.camera_stream import BaseCameraStream
+from src.infrastructure.open_cv.color_quantization import cuantizar_color_bgr
 
 class ImageStream(BaseCameraStream):
     "Clase para simular el stream de cámara usando una imagen fija en modo desarrollo."
@@ -17,7 +18,6 @@ class ImageStream(BaseCameraStream):
         super().__init__(frame_processor)
         self.image_path = str(image_path) if image_path else None
         self.frame_processor = frame_processor
-        # ...existing code...
 
     def get_resolution(self):
         "Devuelve la resolución de la imagen cargada."
@@ -36,16 +36,17 @@ class ImageStream(BaseCameraStream):
             self.logger.error("get_resolution (cv2): %s", e)
             return None, None
 
-    def mjpeg_generator(self, quality=80, ws=None):
+    def mjpeg_generator(self, quality=80):
         "Generador MJPEG simulado para la imagen fija en formato MJPEG estándar."
-        stream_controller = StreamController()
         try:
             image = cv2.imread(self.image_path)
             if image is None:
                 raise FileNotFoundError(f"No se pudo cargar la imagen: {self.image_path}")
-            filtro_activo = stream_controller.get_filtro_activo(ws) if ws else False
-            if filtro_activo:
+            # Aplica el callback de procesamiento de frame si está definido
+            if self.process_frame_callback:
                 image = self.process_frame_callback(image)
+            # Aplica cuantización de color
+            image = cuantizar_color_bgr(image, levels_per_channel=8, mode='posterize')
             encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), quality]
             ret, jpeg = cv2.imencode('.jpg', image, encode_param)
             if not ret:
