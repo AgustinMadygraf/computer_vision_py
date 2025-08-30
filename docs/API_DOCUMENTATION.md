@@ -29,15 +29,29 @@ Este backend permite exponer el stream de una cámara IP, obtener snapshots, con
   ```
 
 
-### 2. Stream MJPEG (Múltiples fuentes)
+
+### 2.a. Stream MJPEG (Básico)
 - **URL:** `/usb/{index}/stream.mjpg`, `/wifi/{index}/stream.mjpg`, `/img/{index}/stream.mjpg`
 - **Método:** GET
-- **Descripción:** Devuelve el stream de video en formato MJPEG para la fuente y el índice especificados.
+- **Descripción:** Devuelve el stream de video en formato MJPEG para la fuente y el índice especificados, sin aplicar filtros.
 - **Respuesta:** `multipart/x-mixed-replace; boundary=frame`
 - **Uso en frontend:**  
   `<img src="/api/computer_vision/usb/0/stream.mjpg" alt="USB 0" />`
   `<img src="/api/computer_vision/wifi/1/stream.mjpg" alt="WiFi 1" />`
   `<img src="/api/computer_vision/img/2/stream.mjpg" alt="Imagen 2" />`
+
+### 2.b. Stream MJPEG con variantes de filtro
+- **URL:** `/usb/{index}/stream_original.mjpg`, `/usb/{index}/stream_filtro.mjpg`, `/wifi/{index}/stream_original.mjpg`, `/wifi/{index}/stream_filtro.mjpg`
+- **Método:** GET
+- **Descripción:**
+  - `stream_original.mjpg`: Devuelve el stream MJPEG sin filtros.
+  - `stream_filtro.mjpg`: Devuelve el stream MJPEG aplicando un filtro visual (por ejemplo, filtro amarillo).
+- **Respuesta:** `multipart/x-mixed-replace; boundary=frame`
+- **Uso en frontend:**  
+  `<img src="/api/computer_vision/usb/0/stream_original.mjpg" alt="USB Original" />`
+  `<img src="/api/computer_vision/usb/0/stream_filtro.mjpg" alt="USB Filtro" />`
+  `<img src="/api/computer_vision/wifi/1/stream_original.mjpg" alt="WiFi Original" />`
+  `<img src="/api/computer_vision/wifi/1/stream_filtro.mjpg" alt="WiFi Filtro" />`
 
 
 ### 3. Resolución del stream (Múltiples fuentes)
@@ -67,65 +81,16 @@ Este backend permite exponer el stream de una cámara IP, obtener snapshots, con
 
 ---
 
-
-## Endpoint WebSocket
-
-### 5. Notificaciones en tiempo real
-- **URL:** `/ws`
-- **Protocolo:** WebSocket
-- **Descripción:** Permite recibir notificaciones automáticas sobre el estado de los streams (por ejemplo, pérdida o recuperación de imagen). Actualmente el WebSocket es global, pero puede adaptarse para identificar el stream si es necesario.
-- **Eventos enviados:**
-  - `status`: Conexión exitosa.
-  - `imagen_perdida`: El stream se ha caído.
-  - `imagen_recuperada`: El stream se ha restablecido.
-- **Ejemplo de conexión en frontend (JavaScript):**
-  ```js
-  const ws = new WebSocket('ws://localhost:5001/ws');
-  ws.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    if (data.event === 'imagen_perdida') {
-      // Mostrar alerta o intentar reconectar
-    }
-    if (data.event === 'imagen_recuperada') {
-      // Refrescar stream
-    }
-  };
-  ```
-
-#### Cierre ordenado de la conexión WebSocket
-
-Para cerrar la conexión WebSocket de forma ordenada, el cliente debe enviar el mensaje `"close"`. El backend responderá con una confirmación y cerrará la conexión:
-
-```js
-ws.send("close"); // Solicita cierre ordenado
-ws.onmessage = (event) => {
-  const data = JSON.parse(event.data);
-  if (data.message === "Cerrando conexión WebSocket") {
-    // El servidor está cerrando la conexión
-  }
-};
-ws.onclose = () => {
-  // La conexión se ha cerrado
-};
-```
-
-Esto permite liberar recursos en el servidor y evitar conexiones abiertas innecesarias.
-
----
-
-
-
-## Flujo de integración recomendado
+### 5. Flujo de integración recomendado
 
 1. El frontend solicita `/streams` para obtener la lista de streams disponibles y sus índices.
 2. Solicita `/usb/{index}/resolution`, `/wifi/{index}/resolution` o `/img/{index}/resolution` para conocer el tamaño del video de cada fuente.
 3. Muestra el stream embebiendo `/usb/{index}/stream.mjpg`, `/wifi/{index}/stream.mjpg` o `/img/{index}/stream.mjpg` en un `<img>`.
 4. Permite al usuario tomar snapshots solicitando `/usb/{index}/snapshot.jpg`, `/wifi/{index}/snapshot.jpg` o `/img/{index}/snapshot.jpg`.
-5. Se conecta al WebSocket `/ws` para recibir notificaciones en tiempo real sobre el estado de los streams.
 
 ---
 
-## Manejo de errores
+### 6. Manejo de errores
 
 - Si la cámara no está disponible, los endpoints pueden devolver errores HTTP (503 en `/snapshot.jpg`).
 - El frontend debe manejar estos errores y mostrar mensajes adecuados al usuario.
@@ -133,14 +98,14 @@ Esto permite liberar recursos en el servidor y evitar conexiones abiertas innece
 
 ---
 
-## CORS
+## 7. CORS
 
 - El backend implementa CORS para permitir el acceso desde otros dominios.
 - Si el frontend se sirve desde un dominio diferente, asegúrate de que CORS esté habilitado.
 
 ---
 
-## Reglas de negocio
+### 8. Reglas de negocio
 
 - El stream y los snapshots requieren que la cámara esté conectada y configurada.
 - No hay autenticación implementada actualmente.
@@ -154,4 +119,3 @@ Esto permite liberar recursos en el servidor y evitar conexiones abiertas innece
 - Arquitectura desacoplada y extensible.
 - Los snapshots se generan en tiempo real y no se almacenan en disco.
 - El adaptador HTTP y los controladores están desacoplados de la lógica de negocio.
-- Soporte para notificaciones en tiempo real vía WebSocket.
