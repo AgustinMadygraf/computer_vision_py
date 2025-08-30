@@ -73,10 +73,7 @@ class OpenCVCameraStreamUSB(BaseCameraStream):
             if self.filter_enabled:
                 frame = self.process_frame_callback(frame)
                 # Aplica cuantización de color
-                frame = cuantizar_color_bgr(frame, levels_per_channel=8, mode='posterize')
-                _frame_tipo = "con línea y cuantización"
-            else:
-                _frame_tipo = "sin línea"
+                frame = cuantizar_color_bgr(frame, levels_per_channel=6, mode='posterize')
             ret, jpeg = cv2.imencode('.jpg', frame, encode_params)
             if not ret:
                 continue

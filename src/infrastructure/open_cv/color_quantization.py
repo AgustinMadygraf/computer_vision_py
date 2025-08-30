@@ -2,7 +2,7 @@
 Path: src/infrastructure/open_cv/color_quantization.py
 Cuantización uniforme de color a 8×8×8 niveles por canal (512 colores) para imágenes BGR OpenCV.
 Opciones: modo 'posterize' (bit-shift), 'rescale' (lineal), dither opcional.
-API: cuantizar_color_bgr(frame, levels_per_channel=8, mode='posterize', dither=False)
+API: cuantizar_color_bgr(frame, levels_per_channel=6, mode='posterize', dither=False)
 Entrada/salida: np.ndarray BGR, uint8, shape (H, W, 3)
 """
 import numpy as np

@@ -131,7 +131,7 @@ class OpenCVCameraStreamWiFi(BaseCameraStream):
                 if self.filter_enabled:
                     frame = self.process_frame_callback(frame)
                     # Aplica cuantización de color
-                    frame = cuantizar_color_bgr(frame, levels_per_channel=8, mode='posterize')
+                    frame = cuantizar_color_bgr(frame, levels_per_channel=6, mode='posterize')
                 frame = cv2.flip(frame, 0)  # Voltea la imagen verticalmente
                 ok, jpg = cv2.imencode(".jpg", frame, encode_params)
                 if not ok:

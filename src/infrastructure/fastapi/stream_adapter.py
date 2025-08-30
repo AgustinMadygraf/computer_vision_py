@@ -129,7 +129,7 @@ def available_streams():
         })
     return JSONResponse(content=result)
 
-@router.get("/usb/{index}/stream_original.mjpg")
+@router.get("/usb/{index}/original/stream.mjpg")
 def stream_usb_original_endpoint(index: int):
     "Streaming MJPEG original (sin filtro) para cámara USB en el índice dado"
     config = get_config()
@@ -146,7 +146,7 @@ def stream_usb_original_endpoint(index: int):
     except HTTPException as e:
         return JSONResponse(status_code=e.status_code, content={"error": e.detail})
 
-@router.get("/usb/{index}/stream_filtro.mjpg")
+@router.get("/usb/{index}/filtro/stream.mjpg")
 def stream_usb_filtro_endpoint(index: int):
     "Streaming MJPEG con filtro amarillo para cámara USB en el índice dado"
     config = get_config()
@@ -163,7 +163,7 @@ def stream_usb_filtro_endpoint(index: int):
     except HTTPException as e:
         return JSONResponse(status_code=e.status_code, content={"error": e.detail})
 
-@router.get("/wifi/{index}/stream_original.mjpg")
+@router.get("/wifi/{index}/original/stream.mjpg")
 def stream_wifi_original_endpoint(index: int):
     "Streaming MJPEG original (sin filtro) para cámara WiFi en el índice dado"
     config = get_config()
@@ -180,7 +180,7 @@ def stream_wifi_original_endpoint(index: int):
     except HTTPException as e:
         return JSONResponse(status_code=e.status_code, content={"error": e.detail})
 
-@router.get("/wifi/{index}/stream_filtro.mjpg")
+@router.get("/wifi/{index}/filtro/stream.mjpg")
 def stream_wifi_filtro_endpoint(index: int):
     "Streaming MJPEG con filtro amarillo para cámara WiFi en el índice dado"
     config = get_config()
