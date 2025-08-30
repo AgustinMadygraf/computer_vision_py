@@ -4,6 +4,8 @@
 
 Este backend permite exponer el stream de una cámara IP, obtener snapshots, consultar la resolución y recibir notificaciones en tiempo real sobre el estado del stream. Soporta los frameworks Flask y FastAPI, y está diseñado siguiendo principios de arquitectura limpia.
 
+**Por defecto, el backend se ejecuta en el puerto 5001.**
+
 ---
 
 
