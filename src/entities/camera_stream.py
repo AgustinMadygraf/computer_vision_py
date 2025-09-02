@@ -28,6 +28,11 @@ class CameraStreamInterface(ABC):
         "Libera los recursos de la cámara."
         pass
 
+    @abstractmethod
+    def set_filter_enabled(self, enabled: bool):
+        "Activa o desactiva el filtro en el stream de cámara."
+        pass
+
 
 class BaseCameraStream(CameraStreamInterface):
     "Clase base abstracta para streams de cámara, con lógica y atributos comunes."
@@ -43,6 +48,10 @@ class BaseCameraStream(CameraStreamInterface):
     def release(self):
         "Libera recursos si es necesario. Por defecto, no hace nada."
         pass
+
+    def set_filter_enabled(self, enabled: bool):
+        "Activa o desactiva el filtro en el stream de cámara. Por defecto, no hace nada."
+        self.filter_enabled = enabled
 
     # Los siguientes métodos siguen siendo abstractos, para que las subclases los implementen
     @abstractmethod

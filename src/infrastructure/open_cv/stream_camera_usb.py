@@ -16,9 +16,9 @@ from src.infrastructure.open_cv.color_quantization import cuantizar_color_bgr
 class OpenCVCameraStreamUSB(BaseCameraStream):
     "Implementación de stream de cámara USB usando OpenCV."
     logger = get_logger("OpenCVCameraStreamUSB")
-    def __init__(self, camera_index=0, frame_processor=None):
+    def __init__(self, source, frame_processor=None):
         super().__init__(frame_processor)
-        self.camera_index = int(camera_index) if camera_index is not None else 0
+        self.camera_index = int(source) if source is not None else 0
         self.frame_processor = frame_processor
         self.process_frame_callback = frame_processor
         self.cap = None

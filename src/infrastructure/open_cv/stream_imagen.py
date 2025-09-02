@@ -15,10 +15,9 @@ from src.entities.filter_factory import FilterFactory
 class ImageStream(BaseCameraStream):
     "Clase para simular el stream de cámara usando una imagen fija en modo desarrollo."
     logger = get_logger("ImageStream")
-    def __init__(self, image_path=None, filter_type=None):
-        frame_processor = FilterFactory.get_filter(filter_type) if filter_type else None
+    def __init__(self, source=None, frame_processor=None):
         super().__init__(frame_processor)
-        self.image_path = str(image_path) if image_path else None
+        self.image_path = str(source) if source else None
         self.frame_processor = frame_processor
 
     def get_resolution(self):

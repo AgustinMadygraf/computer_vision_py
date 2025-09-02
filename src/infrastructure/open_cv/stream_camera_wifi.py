@@ -15,22 +15,24 @@ from src.infrastructure.open_cv.color_quantization import cuantizar_color_bgr
 from src.entities.filter_factory import FilterFactory
 
 class OpenCVCameraStreamWiFi(BaseCameraStream):
+    def set_filter_enabled(self, enabled: bool):
+        "Habilita o deshabilita el filtro en el stream de cámara WiFi."
+        self.filter_enabled = enabled
     "Stream de video RTSP sobre WiFi utilizando OpenCV."
     logger = get_logger("OpenCVCameraStreamWiFi")
-    def __init__(self, ip, user, password, filter_type=None):
-        frame_processor = FilterFactory.get_filter(filter_type) if filter_type else None
+    def __init__(self, source, frame_processor=None, user=None, password=None):
         super().__init__(frame_processor)
-        self.ip = ip
+        self.ip = source
         self.user = user
         self.password = password
         self.frame_processor = frame_processor
         try:
-            self.logger.info("Inicializando OpenCVCameraStreamWiFi con IP=%s, USER=%s", ip, user)
+            self.logger.info("Inicializando OpenCVCameraStreamWiFi con IP=%s, USER=%s, PASSWORD= %s", self.ip, self.user, self.password)
             os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp|stimeout;5001000"
             self.rtsp_url = (
-                f"rtsp://{ip}:554/"
-                f"user={user}&"
-                f"password={password}&"
+                f"rtsp://{self.ip}:554/"
+                f"user={self.user}&"
+                f"password={self.password}&"
                 f"channel=1&"
                 f"stream=0.sdp"
             )
@@ -131,7 +133,10 @@ class OpenCVCameraStreamWiFi(BaseCameraStream):
                     sleep(0.05)
                     continue
                 if self.filter_enabled and self.frame_processor:
-                    frame = self.frame_processor.process(frame)
+                    if callable(self.frame_processor):
+                        frame = self.frame_processor(frame)
+                    elif hasattr(self.frame_processor, "process"):
+                        frame = self.frame_processor.process(frame)
                     # Aplica cuantización de color
                     frame = cuantizar_color_bgr(frame, levels_per_channel=6, mode='posterize')
                 frame = cv2.flip(frame, 0)  # Voltea la imagen verticalmente

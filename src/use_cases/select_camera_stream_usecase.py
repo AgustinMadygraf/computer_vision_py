@@ -20,7 +20,13 @@ class SelectCameraStreamUseCase:
             return OpenCVCameraStreamUSB(camera_index, self.frame_drawer)
         elif self.cameras["wifi"]:
             wifi = self.cameras["wifi"][0]
-            return OpenCVCameraStreamWiFi(wifi["ip"], wifi["user"], wifi["password"], self.frame_drawer)
+            # Usa argumentos nombrados para garantizar el orden correcto
+            return OpenCVCameraStreamWiFi(
+                source=wifi["ip"],
+                frame_processor=self.frame_drawer, 
+                user=wifi["user"],
+                password=wifi["password"]
+            )
         elif self.image_path:
             return ImageStream(self.image_path, self.frame_drawer)
         raise RuntimeError("No se pudo inicializar el stream de cámara.")

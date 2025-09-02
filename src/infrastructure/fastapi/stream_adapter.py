@@ -23,16 +23,17 @@ def get_stream_instance(stream_type: str, index: int):
     stream_controller = StreamController()
     if stream_type == "usb":
         instance = OpenCVCameraStreamUSB(index, stream_controller.draw_line_on_frame)
-    elif stream_type == "wifi":
+    if stream_type == "wifi":
         wifi_list = config.get("WIFI_CAMERAS", [])
         if index >= len(wifi_list):
             raise HTTPException(status_code=404, detail="Cámara WiFi no encontrada")
         cam_conf = wifi_list[index]
+        # Se pasa la función draw_line_on_frame como frame_processor, no como tipo de filtro
         instance = OpenCVCameraStreamWiFi(
-            cam_conf["ip"],
-            cam_conf.get("user", ""),
-            cam_conf.get("password", ""),
-            stream_controller.draw_line_on_frame
+            source=cam_conf["ip"],
+            user=cam_conf.get("user", ""),
+            password=cam_conf.get("password", ""),
+            frame_processor=stream_controller.draw_line_on_frame
         )
     elif stream_type == "img":
         image_path = config.get("IMAGE_PATH")
@@ -116,7 +117,7 @@ def available_streams():
             "index": i,
             "type": "wifi",
             "name": cam.get("NAME", f"WiFi Camera {i}"),
-            "ip": cam.get("IP")
+            "ip": cam.get("ip")
         })
     # Imagen: lista de rutas en config
     img_list = config.get("IMAGE_PATHS", [])
@@ -168,7 +169,7 @@ def stream_wifi_original_endpoint(index: int):
     "Streaming MJPEG original (sin filtro) para cámara WiFi en el índice dado"
     config = get_config()
     wifi_cameras = config.get("WIFI_CAMERAS", [])
-    if index not in wifi_cameras:
+    if index >= len(wifi_cameras):
         return JSONResponse(status_code=404,
                             content={"error": f"No se encontró cámara WiFi en el índice {index}"})
     try:
@@ -185,7 +186,7 @@ def stream_wifi_filtro_endpoint(index: int):
     "Streaming MJPEG con filtro amarillo para cámara WiFi en el índice dado"
     config = get_config()
     wifi_cameras = config.get("WIFI_CAMERAS", [])
-    if index not in wifi_cameras:
+    if index >= len(wifi_cameras):
         return JSONResponse(status_code=404,
                             content={"error": f"No se encontró cámara WiFi en el índice {index}"})
     try:
