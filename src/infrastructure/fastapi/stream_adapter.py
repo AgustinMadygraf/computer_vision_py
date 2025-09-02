@@ -10,6 +10,7 @@ from src.infrastructure.open_cv.stream_camera_wifi import OpenCVCameraStreamWiFi
 from src.infrastructure.open_cv.stream_imagen import ImageStream
 from src.shared.config import get_config
 from src.interface_adapters.controllers.stream_controller import StreamController
+from src.entities.filter_factory import FilterFactory
 
 router = APIRouter(tags=["stream"])
 streams = {}
@@ -20,24 +21,24 @@ def get_stream_instance(stream_type: str, index: int):
     if key in streams:
         return streams[key]
     config = get_config()
-    stream_controller = StreamController()
+    # Siempre inyectar una instancia que implemente IFrameProcessor (VioletLineFilter)
+    violet_filter = FilterFactory.get_filter('violet_line')
     if stream_type == "usb":
-        instance = OpenCVCameraStreamUSB(index, stream_controller.draw_line_on_frame)
-    if stream_type == "wifi":
+        instance = OpenCVCameraStreamUSB(index, frame_processor=violet_filter)
+    elif stream_type == "wifi":
         wifi_list = config.get("WIFI_CAMERAS", [])
         if index >= len(wifi_list):
             raise HTTPException(status_code=404, detail="Cámara WiFi no encontrada")
         cam_conf = wifi_list[index]
-        # Se pasa la función draw_line_on_frame como frame_processor, no como tipo de filtro
         instance = OpenCVCameraStreamWiFi(
             source=cam_conf["ip"],
             user=cam_conf.get("user", ""),
             password=cam_conf.get("password", ""),
-            frame_processor=stream_controller.draw_line_on_frame
+            frame_processor=violet_filter
         )
     elif stream_type == "img":
         image_path = config.get("IMAGE_PATH")
-        instance = ImageStream(image_path=image_path, frame_processor=stream_controller.draw_line_on_frame)
+        instance = ImageStream(image_path=image_path, frame_processor=violet_filter)
     else:
         raise HTTPException(status_code=400, detail="Tipo de stream no soportado")
     streams[key] = instance
