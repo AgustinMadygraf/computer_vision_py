@@ -15,5 +15,5 @@ class StreamController:
 
     def draw_line_on_frame(self, frame, thickness=3):
         "Dibuja una línea horizontal violeta en el frame."
-        frame_modificado = self.frame_drawer.draw_horizontal_yellow_line(frame, thickness)
+        frame_modificado = self.frame_drawer.draw_horizontal_violet_line(frame, thickness)
         return frame_modificado

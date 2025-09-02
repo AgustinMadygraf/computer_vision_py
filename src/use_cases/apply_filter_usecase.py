@@ -13,5 +13,5 @@ class ApplyFilterUseCase:
     def execute(self, frame: Frame, filter_settings: FilterSettings) -> Frame:
         "Aplica el filtro de línea violeta si está activo."
         if filter_settings.is_active():
-            return self.frame_drawer.draw_yellow_line(frame)
+            return self.frame_drawer.draw_violet_line(frame)
         return frame

@@ -3,13 +3,13 @@ Path: src/entities/filter_factory.py
 """
 
 from src.entities.contour_filter import ContourFilter
-from src.entities.yellow_line_filter import YellowLineFilter
+from src.entities.violet_line_filter import VioletLineFilter
 
 class FilterFactory:
     "Fábrica y registro dinámico de filtros."
     _registry = {
         'contour': ContourFilter,
-        'yellow_line': YellowLineFilter,
+        'violet_line': VioletLineFilter,
     }
 
     @classmethod

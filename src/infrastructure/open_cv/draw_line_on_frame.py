@@ -13,9 +13,9 @@ class FrameDrawer(IFrameDrawer):
     "Implementación concreta que depende solo de la interfaz IFrameDrawer."
     logger = get_logger("FrameDrawer")
     "Implementación concreta que depende solo de la interfaz IFrameDrawer."
-    def draw_horizontal_yellow_line(self, frame: np.ndarray, thickness: int = 3) -> np.ndarray:
+    def draw_horizontal_violet_line(self, frame: np.ndarray, thickness: int = 3) -> np.ndarray:
         if frame is None:
-            self.logger.warning("draw_horizontal_yellow_line: frame is None")
+            self.logger.warning("draw_horizontal_violet_line: frame is None")
             return None
         height, width = frame.shape[:2]
         y = height // 2

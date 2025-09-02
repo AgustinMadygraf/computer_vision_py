@@ -13,4 +13,4 @@ class DrawLineOnFrameUseCase:
 
     def execute(self, frame: np.ndarray, thickness: int = 3) -> np.ndarray:
         """Ejecuta la operación de dibujo usando el frame_drawer proporcionado."""
-        return self.frame_drawer.draw_horizontal_yellow_line(frame, thickness)
+        return self.frame_drawer.draw_horizontal_violet_line(frame, thickness)

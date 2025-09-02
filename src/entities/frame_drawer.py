@@ -11,6 +11,6 @@ class IFrameDrawer(ABC):
     """Interfaz para dibujar sobre frames de imagen."""
 
     @abstractmethod
-    def draw_horizontal_yellow_line(self, frame: Any, thickness: int = 3) -> Any:
+    def draw_horizontal_violet_line(self, frame: Any, thickness: int = 3) -> Any:
         """Dibuja una línea horizontal violeta en la mitad de la imagen."""
         pass

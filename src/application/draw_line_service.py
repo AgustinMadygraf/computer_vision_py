@@ -11,6 +11,6 @@ class DrawLineService:
     def __init__(self, draw_line_usecase: DrawLineOnFrameUseCase):
         self.draw_line_usecase = draw_line_usecase
 
-    def draw_horizontal_yellow_line(self, frame: np.ndarray, thickness: int = 3) -> np.ndarray:
+    def draw_horizontal_violet_line(self, frame: np.ndarray, thickness: int = 3) -> np.ndarray:
         """Coordina la operación de dibujo sobre el frame."""
         return self.draw_line_usecase.execute(frame, thickness)

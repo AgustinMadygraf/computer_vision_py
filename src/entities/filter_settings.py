@@ -4,7 +4,7 @@ Entidad FilterSettings: representa la configuración y estado del filtro de lín
 """
 class FilterSettings:
     """Entidad pura para el estado/configuración del filtro."""
-    def __init__(self, active: bool = True, filter_type: str = "yellow_line"):
+    def __init__(self, active: bool = True, filter_type: str = "violet_line"):
         self.active = active
         self.filter_type = filter_type
 
