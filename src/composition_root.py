@@ -17,24 +17,34 @@ logger = get_logger("CompositionRoot")
 
 def create_camera_stream() -> CameraStreamInterface:
     "Crea un stream de cámara según la configuración dinámica de hardware, inyectando dependencias explícitamente."
-    logger.info("Instanciando gateways y servicios para DiscoverCamerasUseCase")
-    usb_gateway = __import__('src.interface_adapters.gateway.camera_discovery_gateway', fromlist=['CameraDiscoveryGateway']).CameraDiscoveryGateway()
-    wifi_gateway = __import__('src.interface_adapters.gateway.wifi_credentials_gateway', fromlist=['WifiCredentialsGateway']).WifiCredentialsGateway()
-    cameras_usecase = DiscoverCamerasUseCase(usb_gateway, wifi_gateway)
-    cameras = cameras_usecase.execute()
-    logger.info("Cámaras detectadas: %s", cameras)
-    image_path = get_env("IMAGE_PATH")
-    logger.info("IMAGE_PATH: %s", image_path)
-    # Instanciar ContourFilter y pasarlo como frame processor
-    frame_processor = FilterFactory.get_filter('contour')
-    select_stream_usecase = SelectCameraStreamUseCase(cameras, image_path, frame_processor)
-    return select_stream_usecase.execute()
+    try:
+        logger.info("Instanciando gateways y servicios para DiscoverCamerasUseCase")
+        usb_gateway = __import__('src.interface_adapters.gateway.camera_discovery_gateway', fromlist=['CameraDiscoveryGateway']).CameraDiscoveryGateway()
+        wifi_gateway = __import__('src.interface_adapters.gateway.wifi_credentials_gateway', fromlist=['WifiCredentialsGateway']).WifiCredentialsGateway()
+        cameras_usecase = DiscoverCamerasUseCase(usb_gateway, wifi_gateway)
+        cameras = cameras_usecase.execute()
+        logger.info("Cámaras detectadas: %s", cameras)
+        image_path = get_env("IMAGE_PATH")
+        logger.info("IMAGE_PATH: %s", image_path)
+        # Pasar el tipo de filtro como string, no la instancia
+        filter_type = 'contour'
+        select_stream_usecase = SelectCameraStreamUseCase(cameras, image_path, filter_type)
+        return select_stream_usecase.execute()
+    except Exception as e:
+        logger.error(f"[ERROR] No se pudo crear el stream de cámara: {e}")
+        print(f"[ERROR] No se pudo crear el stream de cámara: {e}")
+        raise
 
 def get_app():
     "Obtiene la aplicación según el marco configurado."
     # Inyecta la dependencia como interfaz y la expone globalmente para el router
-    logger.info("Inicializando aplicación FastAPI y adaptador de stream")
-    camera_stream = create_camera_stream()
-    stream_adapter.adapter = FastAPICameraHTTPAdapter(camera_stream)
-    logger.info("Aplicación FastAPI lista")
-    return fastapi_app
+    try:
+        logger.info("Inicializando aplicación FastAPI y adaptador de stream")
+        camera_stream = create_camera_stream()
+        stream_adapter.adapter = FastAPICameraHTTPAdapter(camera_stream)
+        logger.info("Aplicación FastAPI lista")
+        return fastapi_app
+    except Exception as e:
+        logger.error(f"[ERROR] No se pudo inicializar la aplicación: {e}")
+        print(f"[ERROR] No se pudo inicializar la aplicación: {e}")
+        raise
