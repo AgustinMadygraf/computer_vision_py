@@ -72,7 +72,11 @@ class OpenCVCameraStreamUSB(BaseCameraStream):
             if frame is None:
                 continue
             if self.filter_enabled:
-                frame = self.process_frame_callback(frame)
+                # Check if process_frame_callback is callable or has a process method
+                if hasattr(self.process_frame_callback, 'process'):
+                    frame = self.process_frame_callback.process(frame)
+                elif callable(self.process_frame_callback):
+                    frame = self.process_frame_callback(frame)
                 # Aplica cuantización de color
                 frame = cuantizar_color_bgr(frame, levels_per_channel=6, mode='posterize')
             ret, jpeg = cv2.imencode('.jpg', frame, encode_params)
