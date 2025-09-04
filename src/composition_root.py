@@ -11,7 +11,6 @@ from src.infrastructure.fastapi.static_server import app as fastapi_app
 from src.infrastructure.fastapi import stream_adapter
 from src.entities.camera_stream import CameraStreamInterface
 from src.infrastructure.fastapi.stream_adapter import FastAPICameraHTTPAdapter
-from src.entities.filter_factory import FilterFactory
 
 logger = get_logger("CompositionRoot")
 
@@ -31,8 +30,7 @@ def create_camera_stream() -> CameraStreamInterface:
         select_stream_usecase = SelectCameraStreamUseCase(cameras, image_path, filter_type)
         return select_stream_usecase.execute()
     except Exception as e:
-        logger.error(f"[ERROR] No se pudo crear el stream de cámara: {e}")
-        print(f"[ERROR] No se pudo crear el stream de cámara: {e}")
+        logger.error("[ERROR] No se pudo crear el stream de cámara: %s", e)
         raise
 
 def get_app():
@@ -45,6 +43,5 @@ def get_app():
         logger.info("Aplicación FastAPI lista")
         return fastapi_app
     except Exception as e:
-        logger.error(f"[ERROR] No se pudo inicializar la aplicación: {e}")
-        print(f"[ERROR] No se pudo inicializar la aplicación: {e}")
+        logger.error("[ERROR] No se pudo inicializar la aplicación: %s", e)
         raise
