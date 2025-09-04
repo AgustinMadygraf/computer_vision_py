@@ -27,11 +27,10 @@ app.add_middleware(
 )
 
 static_path = get_static_path()
+public_dir = os.path.join(static_path, "assets")
+print(f"Static path: {static_path}")
 
-src_dir = os.path.join(static_path, "src")
-
-
-app.mount("/src", StaticFiles(directory=src_dir), name="src")
+app.mount("/assets", StaticFiles(directory=public_dir), name="assets")
 
 # Incluir el router de la API
 app.include_router(stream_router, prefix="/api/computer_vision", tags=["stream"])
@@ -63,9 +62,6 @@ async def read_root():
 @app.get("/{path:path}", response_class=HTMLResponse)
 async def serve_spa(path: str):
     "Ruta para manejar otras páginas de la SPA (Single Page Application)"
-    # Evitar capturar rutas de la API
-    if path.startswith("api/"):
-        raise HTTPException(status_code=404, detail="API endpoint not found")
     public_file = os.path.join(static_path, "public", path)
     src_file = os.path.join(static_path, "src", path)
     if os.path.exists(public_file):
