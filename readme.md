@@ -25,6 +25,7 @@ Este proyecto proporciona una interfaz web para acceder a cámaras IP, permitien
 2. Crear un entorno virtual e instalar dependencias:
    ```bash
    python -m venv venv
+   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
    venv\Scripts\activate
    pip install -r requirements.txt
    ```
