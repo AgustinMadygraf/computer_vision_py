@@ -23,7 +23,7 @@ class SelectCameraStreamUseCase:
             # Usa argumentos nombrados para garantizar el orden correcto
             return OpenCVCameraStreamWiFi(
                 source=wifi["ip"],
-                frame_processor=self.frame_drawer, 
+                frame_processor=self.frame_drawer,
                 user=wifi["user"],
                 password=wifi["password"]
             )

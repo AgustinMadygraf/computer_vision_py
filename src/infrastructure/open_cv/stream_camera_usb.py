@@ -10,8 +10,8 @@ import cv2
 
 from src.shared.logger import get_logger
 
-from src.entities.camera_stream import BaseCameraStream
 from src.infrastructure.open_cv.color_quantization import cuantizar_color_bgr
+from src.entities.camera_stream import BaseCameraStream
 
 class OpenCVCameraStreamUSB(BaseCameraStream):
     "Implementación de stream de cámara USB usando OpenCV."
